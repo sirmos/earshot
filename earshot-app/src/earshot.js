@@ -3,11 +3,9 @@ import { createSystem } from '@iwsdk/core';
 // If hands aren't detected, try 'indexTipSpaces' here.
 const HAND_SPACE = 'gripSpaces';
 
-// angle: degrees from straight ahead (negative = left, positive = right)
-// Replace the url with real voice clips later, e.g. '/audio/voice1.m4a'
 const VOICES = [
-  { url: '/audio/chime.mp3', angle: -60, dist: 1.4, rate: 1.0 },
-  { url: '/audio/chime.mp3', angle: 60, dist: 1.4, rate: 0.6 },
+  { url: '/audio/Voice1.mp3', angle: -60, dist: 1.4, rate: 1.0 },
+  { url: '/audio/Voice2.mp3', angle: 60, dist: 1.4, rate: 1.0 },
 ];
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
