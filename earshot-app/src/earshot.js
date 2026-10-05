@@ -1,11 +1,17 @@
 import { createSystem } from '@iwsdk/core';
 
-// If hands aren't detected, try 'indexTipSpaces' here.
-const HAND_SPACE = 'gripSpaces';
+const HAND_SPACE = 'gripSpaces'; // try 'indexTipSpaces' if hands are not detected
+const INTRO_URL = '/audio/intro.mp3';
+const DING_URL = '/audio/chime.mp3';
+const NEED = 2.0;    // seconds of focused listening needed to catch a clue
+const CUP_ON = 0.7;  // how "cupped" a hand must be to count as listening
+const QUIET = 0.04;  // chatter volume while a clue is playing
 
-const VOICES = [
-  { url: '/audio/Voice1.mp3', angle: -60, dist: 1.4, rate: 1.0 },
-  { url: '/audio/Voice2.mp3', angle: 60, dist: 1.4, rate: 1.0 },
+// angle: degrees from straight ahead (negative = left, positive = right)
+const CONVOS = [
+  { name: 'LEFT ', chatter: '/audio/left-chatter.mp3', clue: '/audio/left-clue.mp3', angle: -80, dist: 1.4 },
+  { name: 'RIGHT', chatter: '/audio/right-chatter.mp3', clue: '/audio/right-clue.mp3', angle: 80, dist: 1.4 },
+  { name: 'FRONT', chatter: '/audio/front-chatter.mp3', clue: '/audio/front-clue.mp3', angle: 0, dist: 1.4 },
 ];
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -16,11 +22,17 @@ export class EarshotSystem extends createSystem({}) {
     this.ready = false;
     this.placed = false;
     this.warned = false;
+    this.phase = 'loading';
+    this.caughtCount = 0;
+    this.clueUntil = 0;
+    this.last = 0;
+    this.message = 'Click the page once to start the audio.';
 
     this.hud = document.createElement('div');
     this.hud.style.cssText =
-      'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;padding:8px 14px;background:rgba(0,0,0,.7);color:#fff;font:14px monospace;border-radius:8px;pointer-events:none;white-space:pre';
+      'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;padding:8px 14px;background:rgba(0,0,0,.75);color:#fff;font:14px monospace;border-radius:8px;pointer-events:none;white-space:pre;max-width:90vw';
     document.body.appendChild(this.hud);
+    this.hud.textContent = this.message;
 
     const start = () => {
       window.removeEventListener('pointerdown', start);
@@ -32,40 +44,108 @@ export class EarshotSystem extends createSystem({}) {
   }
 
   async startAudio() {
+    this.message = 'Loading audio...';
     const ctx = new AudioContext();
     await ctx.resume();
 
-    this.voices = [];
-    for (const cfg of VOICES) {
-      const response = await fetch(cfg.url);
-      const buffer = await ctx.decodeAudioData(await response.arrayBuffer());
+    const load = async (url) => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(url + ' (' + r.status + ')');
+      return ctx.decodeAudioData(await r.arrayBuffer());
+    };
 
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
-      source.loop = true;
-      source.playbackRate.value = cfg.rate;
+    let all;
+    try {
+      all = await Promise.all([
+        load(INTRO_URL),
+        load(DING_URL),
+        ...CONVOS.flatMap((c) => [load(c.chatter), load(c.clue)]),
+      ]);
+    } catch (e) {
+      console.error(e);
+      this.message = 'Audio failed to load: ' + e.message;
+      return;
+    }
 
+    this.ctx = ctx;
+    this.ding = all[1];
+    this.convos = CONVOS.map((cfg, i) => {
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
       filter.frequency.value = 500;
-
       const gain = ctx.createGain();
       gain.gain.value = 0.15;
-
+      const clueGain = ctx.createGain();
+      clueGain.gain.value = 1.0;
       const panner = new PannerNode(ctx, {
         panningModel: 'HRTF',
         distanceModel: 'inverse',
         refDistance: 1,
         rolloffFactor: 0.5,
       });
+      filter.connect(gain).connect(panner).connect(ctx.destination);
+      clueGain.connect(panner);
+      return {
+        cfg,
+        chatterBuf: all[2 + i * 2],
+        clueBuf: all[3 + i * 2],
+        filter, gain, clueGain, panner,
+        x: 0, y: 0, z: 0,
+        dwell: 0,
+        caught: false,
+      };
+    });
 
-      source.connect(filter).connect(gain).connect(panner).connect(ctx.destination);
-      source.start();
-      this.voices.push({ cfg, filter, gain, panner, x: 0, y: 0, z: 0 });
-    }
-
-    this.ctx = ctx;
     this.ready = true;
+    this.phase = 'intro';
+    this.message = 'Helen is speaking... listen.';
+    const s = ctx.createBufferSource();
+    s.buffer = all[0];
+    s.connect(ctx.destination);
+    s.onended = () => this.startChatter();
+    s.start();
+  }
+
+  startChatter() {
+    for (const c of this.convos) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = c.chatterBuf;
+      src.loop = true;
+      src.connect(c.filter);
+      src.start();
+    }
+    this.phase = 'play';
+    this.message = 'Cup a hand toward a conversation to listen in.';
+  }
+
+  catchClue(c) {
+    c.caught = true;
+    this.caughtCount++;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+
+    // Small "ding" to confirm the game noticed.
+    const d = ctx.createBufferSource();
+    d.buffer = this.ding;
+    const dg = ctx.createGain();
+    dg.gain.value = 0.3;
+    d.connect(dg).connect(ctx.destination);
+    d.start(t);
+
+    // The clue itself, clear and spatial, a moment later.
+    const s = ctx.createBufferSource();
+    s.buffer = c.clueBuf;
+    s.connect(c.clueGain);
+    s.start(t + 0.4);
+    s.onended = () => {
+      if (this.caughtCount === this.convos.length) {
+        this.phase = 'solved';
+        this.message =
+          "SOLVED: Victor hid Margaret's gift in the kitchen pantry, and he has the key.";
+      }
+    };
+    this.clueUntil = Math.max(this.clueUntil, performance.now() + (0.4 + c.clueBuf.duration) * 1000 + 300);
+    this.message = 'Clue ' + this.caughtCount + ' of ' + this.convos.length + ' caught!';
   }
 
   getPos(entity) {
@@ -77,7 +157,14 @@ export class EarshotSystem extends createSystem({}) {
   }
 
   update() {
-    if (!this.ready) return;
+    if (!this.ready) {
+      this.hud.textContent = this.message;
+      return;
+    }
+
+    const nowMs = performance.now();
+    const dt = this.last ? Math.min(0.1, (nowMs - this.last) / 1000) : 0;
+    this.last = nowMs;
 
     const head = this.player.head;
     head.updateWorldMatrix(true, false);
@@ -86,21 +173,21 @@ export class EarshotSystem extends createSystem({}) {
     const fx = -m[8], fy = -m[9], fz = -m[10];
     const ux = m[4], uy = m[5], uz = m[6];
 
-    // Place every voice once, relative to where you are facing at the start.
+    // Place every conversation once, relative to where you face at the start.
     if (!this.placed) {
       const flat = Math.hypot(fx, fz) || 1;
       const ffx = fx / flat, ffz = fz / flat;
       const rx = -ffz, rz = ffx;
-      for (const v of this.voices) {
-        const a = (v.cfg.angle * Math.PI) / 180;
+      for (const c of this.convos) {
+        const a = (c.cfg.angle * Math.PI) / 180;
         const dirx = ffx * Math.cos(a) + rx * Math.sin(a);
         const dirz = ffz * Math.cos(a) + rz * Math.sin(a);
-        v.x = px + dirx * v.cfg.dist;
-        v.y = py;
-        v.z = pz + dirz * v.cfg.dist;
-        v.panner.positionX.value = v.x;
-        v.panner.positionY.value = v.y;
-        v.panner.positionZ.value = v.z;
+        c.x = px + dirx * c.cfg.dist;
+        c.y = py;
+        c.z = pz + dirz * c.cfg.dist;
+        c.panner.positionX.value = c.x;
+        c.panner.positionY.value = c.y;
+        c.panner.positionZ.value = c.z;
       }
       this.placed = true;
     }
@@ -110,7 +197,7 @@ export class EarshotSystem extends createSystem({}) {
     l.forwardX.value = fx; l.forwardY.value = fy; l.forwardZ.value = fz;
     l.upX.value = ux; l.upY.value = uy; l.upZ.value = uz;
 
-    // Collect hand positions once per frame.
+    // Hand positions, once per frame.
     const hands = [];
     const spaces =
       this.world && this.world.playerSpaceEntities && this.world.playerSpaceEntities[HAND_SPACE];
@@ -125,16 +212,18 @@ export class EarshotSystem extends createSystem({}) {
     }
 
     const now = this.ctx.currentTime;
-    const lines = [];
-    this.voices.forEach((v, i) => {
-      const dx = v.x - px, dy = v.y - py, dz = v.z - pz;
+    const clueActive = nowMs < this.clueUntil;
+    const lines = ['Clues: ' + this.caughtCount + '/' + this.convos.length];
+
+    for (const c of this.convos) {
+      const dx = c.x - px, dy = c.y - py, dz = c.z - pz;
       const len = Math.hypot(dx, dy, dz) || 1;
 
-      // LOOK: how directly are you facing this voice?
+      // LOOK: how directly you face this conversation.
       const cos = (dx * fx + dy * fy + dz * fz) / len;
       const look = smooth(clamp01((cos - 0.5) / (0.95 - 0.5)));
 
-      // CUP: is a hand raised near your head, on the side of this voice?
+      // CUP: a hand raised near your head, on the side of this conversation.
       let cup = 0;
       for (const p of hands) {
         const hx = p[0] - px, hy = p[1] - py, hz = p[2] - pz;
@@ -144,12 +233,27 @@ export class EarshotSystem extends createSystem({}) {
         cup = Math.max(cup, nearness * align);
       }
 
+      // Sound: clearer when you look and cup; chatter ducks while a clue plays.
       const focus = clamp01(0.5 * look + 0.8 * cup);
-      v.gain.gain.setTargetAtTime(0.15 + 0.85 * focus, now, 0.1);
-      v.filter.frequency.setTargetAtTime(500 + 7500 * focus, now, 0.1);
-      lines.push('voice ' + (i + 1) + '  look ' + look.toFixed(2) + '  cup ' + cup.toFixed(2));
-    });
+      c.gain.gain.setTargetAtTime(clueActive ? QUIET : 0.15 + 0.85 * focus, now, 0.1);
+      c.filter.frequency.setTargetAtTime(clueActive ? 400 : 500 + 7500 * focus, now, 0.1);
 
+      // Catching the clue: cup for about 2 seconds (looking at it makes it faster).
+      if (this.phase === 'play' && !c.caught) {
+        if (cup >= CUP_ON) c.dwell = Math.min(NEED, c.dwell + dt * (1 + look));
+        else c.dwell = Math.max(0, c.dwell - dt);
+        if (c.dwell >= NEED) this.catchClue(c);
+      }
+
+      const filled = Math.round((10 * c.dwell) / NEED);
+      const bar = c.caught ? 'CAUGHT    ' : '#'.repeat(filled) + '-'.repeat(10 - filled);
+      lines.push(
+        c.cfg.name + '  look ' + look.toFixed(2) + '  cup ' + cup.toFixed(2) + '  [' + bar + ']'
+      );
+    }
+
+    lines.push('');
+    lines.push(this.message);
     this.hud.textContent = lines.join('\n');
   }
 }
