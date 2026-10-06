@@ -8,7 +8,7 @@ export class TitleSystem extends createSystem({}) {
     el.innerHTML =
       '<div style="font-size:clamp(44px,9vw,92px);letter-spacing:.14em;font-weight:bold">EARSHOT</div>' +
       '<div style="font-size:clamp(16px,2.6vw,24px);max-width:640px;opacity:.92">A seated audio mystery.<br>Cup your hand to your ear and listen in.</div>' +
-      '<div style="font-size:15px;opacity:.7;max-width:520px">Put on headphones. Hands only, no controllers needed. About five minutes.</div>';
+      '<div style="font-size:15px;opacity:.7;max-width:540px">Put on headphones. Hands only, no controllers needed. About five minutes a case.<br>No hand tracking? Look at a conversation and hold your gaze.</div>';
 
     const mk = (label, primary) => {
       const b = document.createElement('button');

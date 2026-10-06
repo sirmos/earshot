@@ -15,12 +15,6 @@ import {
 } from '@iwsdk/core';
 
 const HIDE_IDS = ['environment', 'plant-sansevieria', 'robot', 'webxr-banner', 'banner', 'welcome-panel'];
-const PAIRS = [['tom', 'priya'], ['luca', 'sam'], ['nora', 'jim']]; // left, right, front
-const IMAGES = [
-  'tom', 'tom-talk', 'priya', 'priya-talk', 'luca', 'luca-talk',
-  'sam', 'sam-talk', 'nora', 'nora-talk', 'jim', 'jim-talk',
-  'helen', 'helen-talk', 'victor', 'victor-talk', 'victor-pantry',
-];
 const FIG_H = 1.55; // guest height in metres
 const ROOM = 7;
 const WALL_H = 3;
@@ -111,7 +105,7 @@ function skyTexture() {
   });
 }
 
-function bannerTexture() {
+function bannerTexture(text) {
   return canvasTexture(1024, 220, (g, w, h) => {
     g.fillStyle = '#f6ead3';
     g.fillRect(0, 0, w, h);
@@ -122,7 +116,7 @@ function bannerTexture() {
     g.font = 'bold 62px Georgia, serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('Happy Retirement, Margaret!', w / 2, h / 2 + 4);
+    g.fillText(text, w / 2, h / 2 + 4, w - 80);
   });
 }
 
@@ -137,7 +131,7 @@ function labelTexture(text) {
     g.font = 'italic 40px Georgia, serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(text, w / 2, h / 2);
+    g.fillText(text, w / 2, h / 2, w - 24);
   });
 }
 
@@ -261,24 +255,17 @@ export class RoomSystem extends createSystem({}) {
     this.theta = 0;
     this.last = performance.now();
     this.guests = [];
+    this.finalists = [];
     this.helen = null;
-    this.victor = null;
     this.panel = null;
     this.built = [];
     this.furn = null;
 
-    // Load the character pictures.
+    // Character pictures are loaded per case (see cases.js), the first time a case needs them.
     this.tex = {};
-    this.failed = 0;
-    const loader = new TextureLoader();
-    for (const n of IMAGES) {
-      loader.load(
-        'characters/' + n + '.png',
-        (t) => { t.colorSpace = SRGBColorSpace; this.tex[n] = t; },
-        undefined,
-        () => { this.failed++; console.warn('Earshot: could not load characters/' + n + '.png'); }
-      );
-    }
+    this.failed = new Set();
+    this.loading = new Set();
+    this.loader = new TextureLoader();
 
     // Shared materials for the decor.
     const glowMap = glowTexture();
@@ -288,7 +275,7 @@ export class RoomSystem extends createSystem({}) {
     this.doorPoolMat = new MeshBasicMaterial({ map: glowMap, transparent: true, opacity: 0.3, blending: AdditiveBlending, depthWrite: false, side: DoubleSide });
     this.shadowMat = new MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false, side: DoubleSide });
     this.skyMat = new MeshBasicMaterial({ map: skyTexture() });
-    this.bannerMat = new MeshBasicMaterial({ map: bannerTexture(), side: DoubleSide });
+    this.bannerMat = new MeshBasicMaterial({ map: bannerTexture('Earshot'), side: DoubleSide });
     this.bulbGeo = new SphereGeometry(0.035, 8, 6);
     this.bulbMat = mat(0xffe2a8);
 
@@ -311,6 +298,27 @@ export class RoomSystem extends createSystem({}) {
     const w = this.world;
     if (w && w.scene && w.scene.add) w.scene.add(obj);
     else w.createTransformEntity(obj);
+  }
+
+  // The pictures a case needs: [name, url]. "shared" pictures (Helen) always come from characters/.
+  imageList(cs) {
+    const out = [];
+    for (const k of cs.images) out.push([k, (cs.art || 'characters/') + k + '.png']);
+    for (const k of cs.shared || []) out.push([k, 'characters/' + k + '.png']);
+    return out;
+  }
+
+  ensureImages(list) {
+    for (const [k, url] of list) {
+      if (this.tex[k] || this.loading.has(k)) continue;
+      this.loading.add(k);
+      this.loader.load(
+        url,
+        (t) => { t.colorSpace = SRGBColorSpace; this.tex[k] = t; },
+        undefined,
+        () => { this.failed.add(k); console.warn('Earshot: could not load ' + url); }
+      );
+    }
   }
 
   // The room itself: wallpaper, panelling, trim, parquet floor, ceiling and rug.
@@ -379,24 +387,29 @@ export class RoomSystem extends createSystem({}) {
     for (const g of this.built) if (g.parent) g.parent.remove(g);
     this.built = [];
     this.guests = [];
+    this.finalists = [];
     this.helen = null;
-    this.victor = null;
     this.panel = null;
     if (this.furn && this.furn.parent) this.furn.parent.remove(this.furn);
     this.furn = new Group();
     this.party.add(this.furn);
   }
 
-  buildScene(layout) {
+  buildScene(layout, cs) {
     this.clearBuilt();
     const cx = this.cx, cz = this.cz;
-    const front = layout[2];
-    if (!front) return;
+    const fwd = window.earshotForward;
+    if (!fwd) return;
+
+    // This case's banner.
+    const oldBanner = this.bannerMat.map;
+    this.bannerMat.map = bannerTexture(cs.banner);
+    this.bannerMat.needsUpdate = true;
+    if (oldBanner) oldBanner.dispose();
 
     // Turn the whole room so the back wall is straight ahead of where you started facing.
-    let fx = front.x - cx, fz = front.z - cz;
-    const fl = Math.hypot(fx, fz) || 1;
-    fx /= fl; fz /= fl;
+    const fl = Math.hypot(fwd[0], fwd[1]) || 1;
+    const fx = fwd[0] / fl, fz = fwd[1] / fl;
     this.theta = Math.atan2(-fx, -fz);
     this.party.rotation.y = this.theta;
     this.party.position.set(cx, this.floorY, cz);
@@ -409,12 +422,14 @@ export class RoomSystem extends createSystem({}) {
 
     // Each pair stands just behind its orb, side by side, with a candlelit table behind them.
     layout.forEach((p, i) => {
+      const grp = cs.groups[i];
+      if (!grp) return;
       let dx = p.x - cx, dz = p.z - cz;
       const len = Math.hypot(dx, dz) || 1;
       dx /= len; dz /= len;
       const sx = -dz, sz = dx;
       const bx = p.x + dx * 0.55, bz = p.z + dz * 0.55;
-      PAIRS[i].forEach((name, j) => {
+      grp.pair.forEach((name, j) => {
         const k = j === 0 ? -1 : 1;
         const f = this.makeFigure(name, bx + sx * 0.4 * k, bz + sz * 0.4 * k, FIG_H);
         if (f) this.guests.push({ fig: f, pair: i, idx: j });
@@ -424,8 +439,9 @@ export class RoomSystem extends createSystem({}) {
       this.addTable((l[0] / ll) * 2.7, (l[1] / ll) * 2.7, false);
     });
 
-    // The gift table, nearly empty: a ribbon and a card.
-    this.addTable(-2.55, -2.95, true);
+    // The gift table (nearly empty), or the piano in the anniversary case.
+    if (cs.prop === 'piano') this.addPiano();
+    else this.addTable(-2.55, -2.95, true, cs.giftLabel || 'For you');
 
     this.addDoor();
     this.addEntrance();
@@ -437,19 +453,24 @@ export class RoomSystem extends createSystem({}) {
     this.addBalloons();
     this.addBuffet();
 
-    // Helen waits to the right of the kitchen door; Victor will be caught standing in the doorway.
+    // Helen waits to the right of the kitchen door.
     const hw = toWorld(DOOR_X + 1.05, -2.8);
-    const vw = toWorld(DOOR_X - 0.15, -2.6);
     this.helen = this.makeFigure('helen', hw[0], hw[1], FIG_H);
-    this.victor = this.makeFigure('victor', vw[0], vw[1], FIG_H);
-    if (this.victor) {
-      this.victor.vis = 0;
-      this.victor.g.visible = false;
-      this.victor.material.opacity = 0;
+
+    // People who step into view when the case is solved.
+    for (const a of cs.finale.appear || []) {
+      const w = toWorld(a.x, a.z);
+      const f = this.makeFigure(a.name, w[0], w[1], FIG_H);
+      if (f) {
+        f.vis = 0;
+        f.g.visible = false;
+        f.material.opacity = 0;
+        this.finalists.push(f);
+      }
     }
 
     // The ending illustration, shown above the door once the mystery is solved.
-    const pt = this.tex['victor-pantry'];
+    const pt = this.tex[cs.finale.picture];
     if (pt) {
       const pw = 1.5, ph = pw / this.aspect(pt);
       const grp = new Group();
@@ -468,7 +489,7 @@ export class RoomSystem extends createSystem({}) {
     }
   }
 
-  addTable(tx, tz, gift) {
+  addTable(tx, tz, gift, label) {
     const r = gift ? 0.42 : 0.52;
     const g = new Group();
     g.position.set(tx, 0, tz);
@@ -484,7 +505,7 @@ export class RoomSystem extends createSystem({}) {
       rb1.position.y = 0.792;
       const rb2 = new Mesh(new BoxGeometry(0.035, 0.006, 0.28), mat(0xd9a24f));
       rb2.position.y = 0.792;
-      const card = new Mesh(new PlaneGeometry(0.34, 0.21), new MeshBasicMaterial({ map: labelTexture('For Margaret'), side: DoubleSide }));
+      const card = new Mesh(new PlaneGeometry(0.34, 0.21), new MeshBasicMaterial({ map: labelTexture(label), side: DoubleSide }));
       card.position.set(0, 0.92, 0);
       card.rotation.y = face;
       g.add(rb1, rb2, card);
@@ -522,6 +543,37 @@ export class RoomSystem extends createSystem({}) {
       pool.position.y = 0.03;
       g.add(cord, shade, lampGlow, pool);
     }
+    this.furn.add(g);
+  }
+
+  // A grand piano in the back-left corner (the anniversary case's hiding place).
+  addPiano() {
+    const g = new Group();
+    g.position.set(-2.65, 0, -2.95);
+    const body = new Mesh(new BoxGeometry(1.3, 0.3, 0.9), mat(0x17110f));
+    body.position.y = 0.82;
+    g.add(body);
+    for (const [lx, lz] of [[-0.55, -0.35], [0.55, -0.35], [0, 0.35]]) {
+      const leg = new Mesh(new CylinderGeometry(0.04, 0.035, 0.68, 8), mat(0x17110f));
+      leg.position.set(lx, 0.34, lz);
+      g.add(leg);
+    }
+    const lidHinge = new Group();
+    lidHinge.position.set(0, 0.97, -0.45);
+    const lidGeo = new BoxGeometry(1.3, 0.03, 0.85);
+    lidGeo.translate(0, 0, 0.425);
+    lidHinge.add(new Mesh(lidGeo, mat(0x241a16)));
+    lidHinge.rotation.x = -0.75;
+    g.add(lidHinge);
+    const keys = new Mesh(new BoxGeometry(1.1, 0.035, 0.2), mat(0xf6ead3));
+    keys.position.set(0, 0.9, 0.52);
+    const keyShelf = new Mesh(new BoxGeometry(1.2, 0.05, 0.12), mat(0x17110f));
+    keyShelf.position.set(0, 0.86, 0.48);
+    g.add(keyShelf, keys);
+    const glow = new Mesh(new PlaneGeometry(1.4, 1.4), this.glowMat);
+    glow.position.set(0, 1.3, 0.1);
+    glow.rotation.y = Math.atan2(2.65, 2.95);
+    g.add(glow);
     this.furn.add(g);
   }
 
@@ -706,7 +758,7 @@ export class RoomSystem extends createSystem({}) {
   }
 
   addPaintings() {
-    this.addPainting(-2.3, 1.95, -3.43, 0, 0);            // back wall, above the gift table
+    this.addPainting(-2.3, 1.95, -3.43, 0, 0);            // back wall, above the gift table / piano
     this.addPainting(-3.43, 1.95, 1.9, Math.PI / 2, 1);   // left wall
     this.addPainting(3.43, 1.95, 1.9, -Math.PI / 2, 0);   // right wall
     this.addPainting(-1.6, 1.95, 3.43, Math.PI, 1);       // wall behind you, above the cake table
@@ -796,14 +848,19 @@ export class RoomSystem extends createSystem({}) {
       this.party.position.set(this.cx, this.floorY, this.cz);
     }
 
-    // Build the guests and decor once the pictures are loaded and the layout is known.
+    // Build the guests and decor once this case's pictures are loaded and the layout is known.
+    const cs = window.earshotCase;
     const layout = window.earshotLayout;
-    const loaded = Object.keys(this.tex).length + this.failed >= IMAGES.length;
-    if (layout && loaded) {
-      const key = layout.map((p) => p.x.toFixed(2) + ',' + p.z.toFixed(2)).join('|') + '@' + this.floorY.toFixed(2);
-      if (key !== this.layoutKey) {
-        this.layoutKey = key;
-        this.buildScene(layout);
+    if (cs && layout) {
+      const list = this.imageList(cs);
+      this.ensureImages(list);
+      const done = list.every(([k]) => this.tex[k] || this.failed.has(k));
+      if (done) {
+        const key = cs.id + '|' + layout.map((p) => p.x.toFixed(2) + ',' + p.z.toFixed(2)).join('|') + '@' + this.floorY.toFixed(2);
+        if (key !== this.layoutKey) {
+          this.layoutKey = key;
+          this.buildScene(layout, cs);
+        }
       }
     }
 
@@ -812,22 +869,23 @@ export class RoomSystem extends createSystem({}) {
 
     // Guests: the speaker's mouth moves and body nods with their voice.
     for (const gst of this.guests) {
-      const cs = st.convos[gst.pair];
-      this.animate(gst.fig, t, hx, hz, cs.speaker === gst.idx && cs.level > 0.02, cs.level);
+      const cv = st.convos[gst.pair];
+      if (!cv) continue;
+      this.animate(gst.fig, t, hx, hz, cv.speaker === gst.idx && cv.level > 0.02, cv.level);
     }
 
-    // Helen speaks the intro.
+    // Helen speaks the intro, the question and the reveal.
     if (this.helen) {
-      this.animate(this.helen, t, hx, hz, st.phase === 'intro' && st.introLevel > 0.02, st.introLevel);
+      this.animate(this.helen, t, hx, hz, st.helenLevel > 0.02, st.helenLevel);
     }
 
-    // Victor and the pantry picture appear when the mystery is solved.
-    const solved = st.phase === 'solved';
-    if (this.victor) {
-      this.victor.vis = solved ? Math.min(1, this.victor.vis + dt * 0.8) : 0;
-      this.victor.g.visible = this.victor.vis > 0;
-      this.victor.material.opacity = this.victor.vis;
-      if (this.victor.g.visible) this.animate(this.victor, t, hx, hz, false, 0);
+    // The people and the picture from the ending appear once the case is solved.
+    const solved = !!st.revealed;
+    for (const f of this.finalists) {
+      f.vis = solved ? Math.min(1, f.vis + dt * 0.8) : 0;
+      f.g.visible = f.vis > 0;
+      f.material.opacity = f.vis;
+      if (f.g.visible) this.animate(f, t, hx, hz, false, 0);
     }
     if (this.panel) {
       this.panel.vis = solved ? Math.min(1, this.panel.vis + dt * 0.5) : 0;
