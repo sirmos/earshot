@@ -1,17 +1,17 @@
 import { createSystem } from '@iwsdk/core';
 
 const HAND_SPACE = 'gripSpaces'; // try 'indexTipSpaces' if hands are not detected
-const INTRO_URL = '/audio/intro.mp3';
-const DING_URL = '/audio/chime.mp3';
+const INTRO_URL = 'audio/intro.mp3';
+const DING_URL = 'audio/chime.mp3';
 const NEED = 2.0;    // seconds of focused listening needed to catch a clue
 const CUP_ON = 0.7;  // how "cupped" a hand must be to count as listening
 const QUIET = 0.04;  // chatter volume while a clue is playing
 
 // angle: degrees from straight ahead (negative = left, positive = right)
 const CONVOS = [
-  { name: 'LEFT ', chatter: '/audio/left-chatter.mp3', clue: '/audio/left-clue.mp3', angle: -80, dist: 1.4 },
-  { name: 'RIGHT', chatter: '/audio/right-chatter.mp3', clue: '/audio/right-clue.mp3', angle: 80, dist: 1.4 },
-  { name: 'FRONT', chatter: '/audio/front-chatter.mp3', clue: '/audio/front-clue.mp3', angle: 0, dist: 1.4 },
+  { name: 'LEFT ', chatter: 'audio/left-chatter.mp3', clue: 'audio/left-clue.mp3', angle: -80, dist: 1.4 },
+  { name: 'RIGHT', chatter: 'audio/right-chatter.mp3', clue: 'audio/right-clue.mp3', angle: 80, dist: 1.4 },
+  { name: 'FRONT', chatter: 'audio/front-chatter.mp3', clue: 'audio/front-clue.mp3', angle: 0, dist: 1.4 },
 ];
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
