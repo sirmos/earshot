@@ -1,5 +1,13 @@
-import { createSystem } from '@iwsdk/core';
+import {
+  createSystem,
+  Mesh,
+  SphereGeometry,
+  RingGeometry,
+  MeshBasicMaterial,
+  DoubleSide,
+} from '@iwsdk/core';
 
+const DEBUG = import.meta.env.DEV || new URLSearchParams(location.search).has('debug');
 const HAND_SPACE = 'gripSpaces'; // try 'indexTipSpaces' if hands are not detected
 const INTRO_URL = 'audio/intro.mp3';
 const DING_URL = 'audio/chime.mp3';
@@ -31,6 +39,7 @@ export class EarshotSystem extends createSystem({}) {
     this.hud = document.createElement('div');
     this.hud.style.cssText =
       'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;padding:8px 14px;background:rgba(0,0,0,.75);color:#fff;font:14px monospace;border-radius:8px;pointer-events:none;white-space:pre;max-width:90vw';
+    this.hud.style.display = DEBUG ? 'block' : 'none';
     document.body.appendChild(this.hud);
     this.hud.textContent = this.message;
 
@@ -41,6 +50,12 @@ export class EarshotSystem extends createSystem({}) {
     };
     window.addEventListener('pointerdown', start);
     window.addEventListener('keydown', start);
+  }
+
+  addToScene(obj) {
+    const w = this.world;
+    if (w && w.scene && w.scene.add) w.scene.add(obj);
+    else w.createTransformEntity(obj);
   }
 
   async startAudio() {
@@ -93,6 +108,7 @@ export class EarshotSystem extends createSystem({}) {
         x: 0, y: 0, z: 0,
         dwell: 0,
         caught: false,
+        pulse: -1,
       };
     });
 
@@ -107,6 +123,7 @@ export class EarshotSystem extends createSystem({}) {
   }
 
   startChatter() {
+    this.placed = false; // re-place everything now that the headset position is valid
     for (const c of this.convos) {
       const src = this.ctx.createBufferSource();
       src.buffer = c.chatterBuf;
@@ -120,6 +137,7 @@ export class EarshotSystem extends createSystem({}) {
 
   catchClue(c) {
     c.caught = true;
+    c.pulse = 0;
     this.caughtCount++;
     const ctx = this.ctx;
     const t = ctx.currentTime;
@@ -140,6 +158,7 @@ export class EarshotSystem extends createSystem({}) {
     s.onended = () => {
       if (this.caughtCount === this.convos.length) {
         this.phase = 'solved';
+        for (const o of this.convos) o.pulse = 0;
         this.message =
           "SOLVED: Victor hid Margaret's gift in the kitchen pantry, and he has the key.";
       }
@@ -173,21 +192,43 @@ export class EarshotSystem extends createSystem({}) {
     const fx = -m[8], fy = -m[9], fz = -m[10];
     const ux = m[4], uy = m[5], uz = m[6];
 
-    // Place every conversation once, relative to where you face at the start.
+    // Place every conversation relative to where you face (re-done when chatter starts).
     if (!this.placed) {
       const flat = Math.hypot(fx, fz) || 1;
       const ffx = fx / flat, ffz = fz / flat;
       const rx = -ffz, rz = ffx;
+      const baseY = py > 0.5 ? py : 1.4;
       for (const c of this.convos) {
         const a = (c.cfg.angle * Math.PI) / 180;
         const dirx = ffx * Math.cos(a) + rx * Math.sin(a);
         const dirz = ffz * Math.cos(a) + rz * Math.sin(a);
         c.x = px + dirx * c.cfg.dist;
-        c.y = py;
+        c.y = baseY - 0.1;
         c.z = pz + dirz * c.cfg.dist;
         c.panner.positionX.value = c.x;
         c.panner.positionY.value = c.y;
         c.panner.positionZ.value = c.z;
+
+        if (!c.orb) {
+          c.orb = new Mesh(
+            new SphereGeometry(1, 24, 16),
+            new MeshBasicMaterial({ color: 0xff9f5b, transparent: true, opacity: 0.4, depthTest: false })
+          );
+          c.orb.renderOrder = 10;
+          c.orb.scale.setScalar(0.05);
+          this.addToScene(c.orb);
+
+          c.ring = new Mesh(
+            new RingGeometry(0.9, 1, 48),
+            new MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0, side: DoubleSide, depthTest: false })
+          );
+          c.ring.renderOrder = 10;
+          c.ring.scale.setScalar(0.1);
+          this.addToScene(c.ring);
+        }
+        c.orb.position.set(c.x, c.y, c.z);
+        c.ring.position.set(c.x, c.y, c.z);
+        c.ring.lookAt(px, baseY, pz);
       }
       this.placed = true;
     }
@@ -245,6 +286,28 @@ export class EarshotSystem extends createSystem({}) {
         if (c.dwell >= NEED) this.catchClue(c);
       }
 
+      // Orb: grows and brightens with focus and progress; gold once caught.
+      if (c.orb) {
+        const prog = c.caught ? 1 : c.dwell / NEED;
+        const beat = this.phase === 'solved' ? 0.02 * Math.sin(nowMs / 150) : 0;
+        c.orb.scale.setScalar(c.caught ? 0.11 + beat : 0.05 + 0.04 * focus + 0.04 * prog);
+        c.orb.material.opacity = c.caught ? 0.95 : 0.3 + 0.4 * focus + 0.25 * prog;
+        c.orb.material.color.setHex(c.caught ? 0xffd34d : 0xff9f5b);
+
+        // Ring burst after a clue is caught (and again for all three at the finale).
+        if (c.pulse >= 0) {
+          c.pulse += dt;
+          const t = c.pulse / 1.2;
+          if (t >= 1) {
+            c.pulse = -1;
+            c.ring.material.opacity = 0;
+          } else {
+            c.ring.scale.setScalar(0.1 + 0.5 * t);
+            c.ring.material.opacity = 0.9 * (1 - t);
+          }
+        }
+      }
+
       const filled = Math.round((10 * c.dwell) / NEED);
       const bar = c.caught ? 'CAUGHT    ' : '#'.repeat(filled) + '-'.repeat(10 - filled);
       lines.push(
@@ -252,6 +315,7 @@ export class EarshotSystem extends createSystem({}) {
       );
     }
 
+    lines.push('orbs: ' + this.convos.map((c) => (c.orb ? (c.orb.parent ? 'in scene' : 'NOT in scene') : 'none')).join(', '));
     lines.push('');
     lines.push(this.message);
     this.hud.textContent = lines.join('\n');
