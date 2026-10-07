@@ -20,6 +20,7 @@ const ROOM = 7;
 const WALL_H = 3;
 const DOOR_X = 1.9; // kitchen door sits on the right of the back wall, clear of the front table
 const ENTRANCE_X = 1.2; // main entrance, on the wall behind you
+const PAIR_TURN = 0.5; // radians: how far each guest turns toward their conversation partner
 const mat = (color, extra) => new MeshBasicMaterial({ color, ...extra });
 
 // Repeat a texture. 1000 = RepeatWrapping.
@@ -246,8 +247,8 @@ function kitchenSignTexture(text) {
 
 // Each case picks one of these settings with "theme" in cases.js.
 const THEMES = {
-  parlor: { cloth: 0xf1e4cb, top: 0xfff7e6, runner: 0x8a2a3a, balloons: [0xd94f5c, 0xf2c14e, 0xf7efe2, 0x3a8f85], doorSign: 'KITCHEN', hall: false, lantern: false },
-  conservatory: { cloth: 0xe6dfc4, top: 0xfff8e0, runner: 0xc9a24f, balloons: [0xe8c36a, 0xf7efe2, 0x9bb59a, 0xd9b45a], doorSign: 'HOUSE', hall: true, lantern: true },
+  parlor: { chair: 0x3b2417, cushion: 0x7a2a3a, cloth: 0xf1e4cb, top: 0xfff7e6, runner: 0x8a2a3a, balloons: [0xd94f5c, 0xf2c14e, 0xf7efe2, 0x3a8f85], doorSign: 'KITCHEN', hall: false, lantern: false },
+  conservatory: { chair: 0x1b2e27, cushion: 0xd9cfb2, cloth: 0xe6dfc4, top: 0xfff8e0, runner: 0xc9a24f, balloons: [0xe8c36a, 0xf7efe2, 0x9bb59a, 0xd9b45a], doorSign: 'HOUSE', hall: true, lantern: true },
 };
 
 // A moonlit garden seen through the conservatory glass.
@@ -370,6 +371,7 @@ export class RoomSystem extends createSystem({}) {
     this.panel = null;
     this.built = [];
     this.furn = null;
+    this.locket = null;
 
     // Character pictures are loaded per case (see cases.js), the first time a case needs them.
     this.tex = {};
@@ -394,6 +396,7 @@ export class RoomSystem extends createSystem({}) {
     this.shell = null;
     this.setTheme('parlor');
     this.addToScene(this.party);
+    this.unifyLabels();
 
     // Re-centre the room when the session changes.
     const vs = this.world.visibilityState;
@@ -569,6 +572,7 @@ export class RoomSystem extends createSystem({}) {
     this.finalists = [];
     this.helen = null;
     this.panel = null;
+    this.locket = null;
     if (this.furn && this.furn.parent) this.furn.parent.remove(this.furn);
     this.furn = new Group();
     this.party.add(this.furn);
@@ -601,6 +605,7 @@ export class RoomSystem extends createSystem({}) {
     };
 
     // Each pair stands just behind its orb, side by side, with a candlelit table behind them.
+    const tablePos = [];
     layout.forEach((p, i) => {
       const grp = cs.groups[i];
       if (!grp) return;
@@ -611,17 +616,23 @@ export class RoomSystem extends createSystem({}) {
       const bx = p.x + dx * 0.55, bz = p.z + dz * 0.55;
       grp.pair.forEach((name, j) => {
         const k = j === 0 ? -1 : 1;
-        const f = this.makeFigure(name, bx + sx * 0.4 * k, bz + sz * 0.4 * k, FIG_H);
-        if (f) this.guests.push({ fig: f, pair: i, idx: j });
+        const f = this.makeFigure(name, bx + sx * 0.36 * k, bz + sz * 0.36 * k, FIG_H);
+        if (f) {
+          f.partner = [-sx * k, -sz * k]; // direction toward the other person of the pair
+          this.guests.push({ fig: f, pair: i, idx: j });
+        }
       });
       const l = toLocal(p.x, p.z);
       const ll = Math.hypot(l[0], l[1]) || 1;
-      this.addTable((l[0] / ll) * 2.7, (l[1] / ll) * 2.7, false);
+      const tx = (l[0] / ll) * 2.7, tz = (l[1] / ll) * 2.7;
+      tablePos.push([tx, tz]);
+      this.addTable(tx, tz, false);
     });
 
     // The gift table (nearly empty), or the piano in the anniversary case.
     if (cs.prop === 'piano') this.addPiano();
     else this.addTable(-2.55, -2.95, true, cs.giftLabel || 'For you');
+    this.addChairs(tablePos, cs.prop === 'piano');
 
     this.addDoor();
     this.addBanner();
@@ -771,6 +782,21 @@ export class RoomSystem extends createSystem({}) {
     glow.position.set(0, 1.3, 0.1);
     glow.rotation.y = Math.atan2(2.65, 2.95);
     g.add(glow);
+
+    // Beatrice's locket: appears on the piano once the case is solved.
+    const lk = new Group();
+    lk.position.set(0, 1.0, -0.05);
+    const lbody = new Mesh(new SphereGeometry(0.07, 14, 10), mat(0xf2c14e));
+    lbody.scale.set(1, 1.15, 0.45);
+    const lchain = new Mesh(new CylinderGeometry(0.005, 0.005, 0.28, 4), mat(0xd9a24f));
+    lchain.position.y = 0.17;
+    const lglow = new Mesh(new PlaneGeometry(1.0, 1.0), this.glowMat);
+    lglow.position.z = 0.06;
+    lglow.rotation.y = Math.atan2(2.65, 2.95);
+    lk.add(lbody, lchain, lglow);
+    lk.visible = false;
+    g.add(lk);
+    this.locket = { grp: lk, glow: lglow, vis: 0 };
     this.furn.add(g);
   }
 
@@ -997,6 +1023,64 @@ export class RoomSystem extends createSystem({}) {
     });
   }
 
+  // Chairs pulled up to each guest table (on the sides, so the pairs stay visible in front).
+  addChairs(tables, hasPiano) {
+    const wood = mat(this.theme.chair);
+    const cush = mat(this.theme.cushion);
+    for (const [tx, tz] of tables) {
+      const len = Math.hypot(tx, tz) || 1;
+      const ox = tx / len, oz = tz / len;   // outward from the middle of the room
+      const sx = -oz, sz = ox;              // sideways
+      for (const side of [-1, 1]) {
+        const cx = tx + sx * side * 0.88 + ox * 0.12;
+        const cz = tz + sz * side * 0.88 + oz * 0.12;
+        if (Math.abs(cx) > 3.15 || Math.abs(cz) > 3.15) continue;           // outside the room
+        if (hasPiano && cx < -1.75 && cz < -2.2) continue;                  // would sit inside the piano
+        const c = new Group();
+        c.position.set(cx, 0, cz);
+        c.rotation.y = Math.atan2(tx - cx, tz - cz); // front of the chair faces its table
+        const base = new Mesh(new BoxGeometry(0.44, 0.04, 0.44), wood);
+        base.position.y = 0.42;
+        const seat = new Mesh(new BoxGeometry(0.42, 0.05, 0.42), cush);
+        seat.position.y = 0.46;
+        const back = new Mesh(new BoxGeometry(0.42, 0.46, 0.05), wood);
+        back.position.set(0, 0.7, -0.2);
+        c.add(base, seat, back);
+        for (const [lx, lz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) {
+          const leg = new Mesh(new BoxGeometry(0.04, 0.4, 0.04), wood);
+          leg.position.set(lx, 0.2, lz);
+          c.add(leg);
+        }
+        this.furn.add(c);
+      }
+    }
+  }
+
+  // One label everywhere: the SDK's own button says "Enter XR", but the title screen says "Enter VR".
+  unifyLabels() {
+    const re = /\b(Enter|Exit) XR\b/g;
+    const fix = (root) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let n;
+      while ((n = walker.nextNode())) {
+        if (n.nodeValue && re.test(n.nodeValue)) { re.lastIndex = 0; n.nodeValue = n.nodeValue.replace(re, '$1 VR'); }
+        re.lastIndex = 0;
+      }
+      for (const el of root.querySelectorAll('*')) {
+        if (el.shadowRoot) fix(el.shadowRoot);
+        for (const attr of ['aria-label', 'title']) {
+          const v = el.getAttribute && el.getAttribute(attr);
+          if (v && /(Enter|Exit) XR/.test(v)) el.setAttribute(attr, v.replace(re, '$1 VR'));
+          re.lastIndex = 0;
+        }
+      }
+    };
+    const run = () => { try { fix(document.body); } catch (e) { /* ignore */ } };
+    run();
+    const id = setInterval(run, 1000);
+    this.cleanupFuncs.push(() => clearInterval(id));
+  }
+
   // The conservatory's garden doors, on the wall behind you: iron-framed glass onto the night garden.
   addGardenDoors() {
     const g = new Group();
@@ -1034,7 +1118,7 @@ export class RoomSystem extends createSystem({}) {
   // Potted palms around the edges of the conservatory.
   addPlants() {
     const leafMat = new MeshBasicMaterial({ map: plantTexture(), transparent: true, alphaTest: 0.3, side: DoubleSide });
-    const spots = [[3.2, -3.15, 0.9], [-3.15, -1.6, 0.9], [3.2, -0.6, 1.1], [3.1, 3.0, 1.0], [-3.15, 3.1, 1.1], [-3.15, 1.0, 0.95]];
+    const spots = [[3.2, -3.15, 0.9], [-3.15, -1.6, 0.9], [3.15, -1.9, 1.0], [3.1, 3.0, 1.0], [-3.15, 3.1, 1.1]];
     spots.forEach(([x, z, s], k) => {
       const g = new Group();
       g.position.set(x, 0, z);
@@ -1060,7 +1144,16 @@ export class RoomSystem extends createSystem({}) {
 
   animate(f, t, hx, hz, speaking, level) {
     const amp = Math.min(0.7, level * 8);
-    f.g.rotation.y = Math.atan2(hx - f.g.position.x, hz - f.g.position.z); // face the player
+    // Face the player, turned a little toward the conversation partner so pairs look like they are talking.
+    let dx = hx - f.g.position.x, dz = hz - f.g.position.z;
+    const dl = Math.hypot(dx, dz) || 1;
+    dx /= dl; dz /= dl;
+    if (f.partner) {
+      const c = Math.cos(PAIR_TURN), sn = Math.sin(PAIR_TURN);
+      const nx = dx * c + f.partner[0] * sn, nz = dz * c + f.partner[1] * sn;
+      dx = nx; dz = nz;
+    }
+    f.g.rotation.y = Math.atan2(dx, dz);
     f.g.rotation.z = Math.sin(t * 2.2 + f.phase) * 0.01 + (speaking ? Math.sin(t * 5 + f.phase) * 0.02 * amp : 0);
     f.g.position.y = this.floorY + (speaking ? Math.abs(Math.sin(t * 6 + f.phase)) * 0.01 * amp : 0);
     this.setMouth(f, speaking && level > 0.04 && Math.sin(t * 16 + f.phase) > -0.1);
@@ -1139,6 +1232,12 @@ export class RoomSystem extends createSystem({}) {
       f.g.visible = f.vis > 0;
       f.material.opacity = f.vis;
       if (f.g.visible) this.animate(f, t, hx, hz, false, 0);
+    }
+    if (this.locket) {
+      this.locket.vis = solved ? Math.min(1, this.locket.vis + dt * 0.8) : 0;
+      this.locket.grp.visible = this.locket.vis > 0;
+      this.locket.grp.scale.setScalar(0.2 + 0.8 * this.locket.vis);
+      this.locket.glow.scale.setScalar(1 + 0.15 * Math.sin(t * 3));
     }
     if (this.panel) {
       this.panel.vis = solved ? Math.min(1, this.panel.vis + dt * 0.5) : 0;

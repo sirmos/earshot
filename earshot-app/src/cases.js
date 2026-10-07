@@ -56,7 +56,7 @@ export const CASES = [
     images: [
       'dot', 'dot-talk', 'hugh', 'hugh-talk', 'mia', 'mia-talk', 'omar', 'omar-talk',
       'rosa', 'rosa-talk', 'ben', 'ben-talk', 'walter', 'walter-talk', 'lucille', 'lucille-talk',
-      'winston', 'kit', 'felix', 'felix-talk', 'felix-piano',
+      'winston', 'kit', 'felix', 'felix-talk',
     ],
     intro: 'audio/case2/intro.mp3',
     ask: 'audio/case2/ask.mp3',
@@ -74,11 +74,11 @@ export const CASES = [
     finale: {
       text: "Felix was keeping a promise: Arthur asked him to hide Beatrice's locket inside the piano until the toast.",
       appear: [
-        { name: 'felix', x: -2.65, z: -2.2 },
+        { name: 'felix', x: -1.7, z: -3.05 }, // beside the piano; the locket glows on it
         { name: 'winston', x: 2.4, z: -1.2 },
         { name: 'kit', x: -2.5, z: -0.8 },
       ],
-      picture: 'felix-piano',
+      picture: null, // Felix and the locket at the piano are the ending (no wall picture)
     },
   },
 ];
