@@ -1,19 +1,22 @@
 // Every mystery lives here. To add a case: add an entry, drop its pictures and audio in the
 // folders named below, and the game picks it up (the case file lists it automatically).
 //
+// theme               = the room's setting: 'parlor' (default, classic dining room) or 'conservatory' (moonlit garden)
+// host                = [x, z] where Helen stands (optional). Keep her clear of the line of sight behind any guest pair.
 // groups[i].pair      = [left guest, right guest] (picture names, lowercase)
 // startSpeaker/clueSpeaker = 0 or 1, which of the pair talks first / gives the clue
 // angle               = degrees from straight ahead (negative = left, positive = right)
 // accuse              = a list of questions, asked in order. Each has options and the index of the right one
 //                       (options are shuffled in play). A single object also works.
 // finale.appear       = people who step into view when solved (x, z in room units; door is at x 1.9, z -3.44)
-// finale.picture      = picture shown above the kitchen door when solved
+// finale.picture      = picture shown above the door when solved
 // ask / reveal        = optional Helen audio (the game works without them)
 
 export const CASES = [
   {
     id: 1,
     title: 'The Retirement Party',
+    theme: 'parlor',
     banner: 'Happy Retirement, Margaret!',
     giftLabel: 'For Margaret',
     prop: 'gift',
@@ -44,6 +47,8 @@ export const CASES = [
   {
     id: 2,
     title: 'The Golden Anniversary',
+    theme: 'conservatory',
+    host: [0, -3.0], // straight ahead at the back: no guest pair stands in front of her
     banner: 'Happy 50th, Arthur & Beatrice!',
     prop: 'piano',
     art: 'characters/case2/',

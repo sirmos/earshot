@@ -230,7 +230,7 @@ function kitchenTexture() {
   });
 }
 
-function kitchenSignTexture() {
+function kitchenSignTexture(text) {
   return canvasTexture(256, 64, (g, w, h) => {
     g.fillStyle = '#b98a4a';
     g.fillRect(0, 0, w, h);
@@ -240,7 +240,117 @@ function kitchenSignTexture() {
     g.font = 'bold 34px Georgia, serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('KITCHEN', w / 2, h / 2 + 2);
+    g.fillText(text, w / 2, h / 2 + 2, w - 24);
+  });
+}
+
+// Each case picks one of these settings with "theme" in cases.js.
+const THEMES = {
+  parlor: { cloth: 0xf1e4cb, top: 0xfff7e6, runner: 0x8a2a3a, balloons: [0xd94f5c, 0xf2c14e, 0xf7efe2, 0x3a8f85], doorSign: 'KITCHEN', hall: false, lantern: false },
+  conservatory: { cloth: 0xe6dfc4, top: 0xfff8e0, runner: 0xc9a24f, balloons: [0xe8c36a, 0xf7efe2, 0x9bb59a, 0xd9b45a], doorSign: 'HOUSE', hall: true, lantern: true },
+};
+
+// A moonlit garden seen through the conservatory glass.
+function nightGardenTexture() {
+  return canvasTexture(512, 256, (g, w, h) => {
+    const sky = g.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#0a1330');
+    sky.addColorStop(0.55, '#1c2f4f');
+    sky.addColorStop(1, '#16301f');
+    g.fillStyle = sky;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 70; i++) {
+      g.globalAlpha = 0.35 + Math.random() * 0.65;
+      g.fillRect(Math.random() * w, Math.random() * h * 0.5, 1.5, 1.5);
+    }
+    g.globalAlpha = 1;
+    g.fillStyle = '#fff3c9';
+    g.beginPath(); g.arc(w * 0.2, h * 0.22, 16, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#14283a';
+    g.beginPath(); g.moveTo(0, h * 0.62);
+    g.quadraticCurveTo(w * 0.25, h * 0.45, w * 0.5, h * 0.6);
+    g.quadraticCurveTo(w * 0.75, h * 0.72, w, h * 0.55);
+    g.lineTo(w, h); g.lineTo(0, h); g.fill();
+    for (let i = 0; i < 9; i++) {
+      const x = (i + 0.5) * (w / 9) + (Math.random() - 0.5) * 20;
+      const r = 26 + Math.random() * 22;
+      g.fillStyle = i % 2 ? '#10281b' : '#0d2217';
+      g.beginPath(); g.arc(x, h * 0.72, r, 0, Math.PI * 2); g.fill();
+      g.fillRect(x - 4, h * 0.72, 8, h * 0.2);
+    }
+    g.fillStyle = '#0b1d13';
+    g.fillRect(0, h * 0.88, w, h * 0.12);
+    g.fillStyle = '#ffd27a';
+    for (let i = 0; i < 26; i++) {
+      g.globalAlpha = 0.5 + Math.random() * 0.5;
+      g.beginPath(); g.arc(Math.random() * w, h * 0.5 + Math.random() * h * 0.4, 1.8, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+  });
+}
+
+function tileTexture() {
+  return canvasTexture(256, 256, (g, w) => {
+    const s = w / 2;
+    for (let y = 0; y < 2; y++) {
+      for (let x = 0; x < 2; x++) {
+        g.fillStyle = (x + y) % 2 ? '#7f9477' : '#d9cfb2';
+        g.fillRect(x * s, y * s, s, s);
+        g.strokeStyle = 'rgba(60,60,40,0.55)';
+        g.lineWidth = 4;
+        g.strokeRect(x * s, y * s, s, s);
+      }
+    }
+  });
+}
+
+// A palm-like potted plant (drawn with a transparent background).
+function plantTexture() {
+  return canvasTexture(256, 256, (g, w, h) => {
+    g.lineCap = 'round';
+    const bx = w / 2, by = h - 6;
+    for (let i = 0; i < 9; i++) {
+      const a = ((-70 + i * 17.5) * Math.PI) / 180;
+      const len = 170 + (i % 3) * 25;
+      const tx = bx + Math.sin(a) * len, ty = by - Math.cos(a) * len * 0.95;
+      const cx = bx + Math.sin(a) * len * 0.35, cy = by - Math.cos(a) * len - 30;
+      g.strokeStyle = '#25502f';
+      g.lineWidth = 4;
+      g.beginPath(); g.moveTo(bx, by); g.quadraticCurveTo(cx, cy, tx, ty); g.stroke();
+      for (let k = 1; k <= 12; k++) {
+        const t = k / 13, u = 1 - t;
+        const x = u * u * bx + 2 * u * t * cx + t * t * tx;
+        const y = u * u * by + 2 * u * t * cy + t * t * ty;
+        const dx = 2 * u * (cx - bx) + 2 * t * (tx - cx);
+        const dy = 2 * u * (cy - by) + 2 * t * (ty - cy);
+        const m = Math.hypot(dx, dy) || 1;
+        const nx = -dy / m, ny = dx / m;
+        const L = 26 * (1 - t * 0.5);
+        g.strokeStyle = k % 2 ? '#2f6b3a' : '#3b8247';
+        g.lineWidth = 5;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + nx * L + (dx / m) * 8, y + ny * L + (dy / m) * 8); g.stroke();
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x - nx * L + (dx / m) * 8, y - ny * L + (dy / m) * 8); g.stroke();
+      }
+    }
+  });
+}
+
+// A warm hallway glimpsed through the house door.
+function hallTexture() {
+  return canvasTexture(128, 256, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h);
+    gr.addColorStop(0, '#6a4a30');
+    gr.addColorStop(0.5, '#e0b878');
+    gr.addColorStop(1, '#f3dca0');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(60,36,20,0.75)';
+    g.fillRect(16, 50, 34, 46);
+    g.fillRect(70, 60, 40, 52);
+    g.fillStyle = 'rgba(255,230,170,0.5)';
+    g.fillRect(20, 54, 26, 38);
+    g.fillRect(74, 64, 32, 44);
   });
 }
 
@@ -280,7 +390,9 @@ export class RoomSystem extends createSystem({}) {
     this.bulbMat = mat(0xffe2a8);
 
     this.party = new Group();
-    this.buildShell();
+    this.themeName = null;
+    this.shell = null;
+    this.setTheme('parlor');
     this.addToScene(this.party);
 
     // Re-centre the room when the session changes.
@@ -321,9 +433,21 @@ export class RoomSystem extends createSystem({}) {
     }
   }
 
-  // The room itself: wallpaper, panelling, trim, parquet floor, ceiling and rug.
+  // Each case has its own setting (see "theme" in cases.js). Switching rebuilds walls, floor and ceiling.
+  setTheme(name) {
+    if (this.themeName === name) return;
+    this.themeName = name;
+    this.theme = THEMES[name] || THEMES.parlor;
+    if (this.shell && this.shell.parent) this.shell.parent.remove(this.shell);
+    this.shell = new Group();
+    this.party.add(this.shell);
+    if (name === 'conservatory') this.buildConservatoryShell();
+    else this.buildParlorShell();
+  }
+
+  // Setting 1: the classic dining room (wallpaper, panelling, trim, parquet floor, ceiling and rug).
   // Walls are built from thin strips (not closed boxes) so nothing blocks the view.
-  buildShell() {
+  buildParlorShell() {
     const gold = mat(0xb98a4a);
     const wallMat = mat(0xffffff, { map: tile(wallpaperTexture(), ROOM, WALL_H) });
     const panelMat = mat(0xffffff, { map: tile(panelTexture(), ROOM, 1) });
@@ -352,7 +476,62 @@ export class RoomSystem extends createSystem({}) {
     const rugInner = new Mesh(new CylinderGeometry(1.85, 1.85, 0.01, 40), mat(0x6e2a3a));
     rugInner.position.y = 0.028;
 
-    this.party.add(walls, wainscot, chairRail, baseboard, crown, crownLine, floor, ceiling, rugEdge, rug, rugRing, rugInner);
+    this.shell.add(walls, wainscot, chairRail, baseboard, crown, crownLine, floor, ceiling, rugEdge, rug, rugRing, rugInner);
+  }
+
+  // Setting 2: a moonlit garden conservatory: glass walls in iron frames, tiled floor, glass roof.
+  buildConservatoryShell() {
+    const sh = this.shell;
+    const iron = mat(0x16221f);
+    const brass = mat(0xc9a24f);
+    const glass = mat(0xffffff, { map: nightGardenTexture() });
+    sh.add(
+      wallRing(ROOM, 0.9, 2.85, 0, glass),
+      wallRing(ROOM, 0, 0.9, 0.01, mat(0x2c4a3f)),
+      wallRing(ROOM, 0.9, 0.96, 0.02, brass),
+      wallRing(ROOM, 0, 0.12, 0.02, mat(0x1b2e27)),
+      wallRing(ROOM, 2.85, WALL_H, 0.02, iron)
+    );
+
+    // Iron frames over the glass.
+    for (const [wx, wz, ry] of [[0, -3.46, 0], [0, 3.46, Math.PI], [-3.46, 0, Math.PI / 2], [3.46, 0, -Math.PI / 2]]) {
+      const w = new Group();
+      w.position.set(wx, 0, wz);
+      w.rotation.y = ry;
+      for (const o of [-2.8, -1.4, 0, 1.4, 2.8]) {
+        const b = new Mesh(new PlaneGeometry(0.07, 1.95), iron);
+        b.position.set(o, 1.875, 0);
+        w.add(b);
+      }
+      const bar = new Mesh(new PlaneGeometry(ROOM, 0.06), iron);
+      bar.position.set(0, 1.9, 0);
+      w.add(bar);
+      sh.add(w);
+    }
+
+    const floor = new Mesh(new PlaneGeometry(ROOM, ROOM), mat(0xffffff, { map: tile(tileTexture(), ROOM, ROOM) }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0.01;
+    const roof = new Mesh(new PlaneGeometry(ROOM, ROOM), mat(0x0c1824, { side: DoubleSide }));
+    roof.rotation.x = Math.PI / 2;
+    roof.position.y = WALL_H - 0.01;
+    sh.add(floor, roof);
+    for (const v of [-2.3, 0, 2.3]) {
+      const a = new Mesh(new BoxGeometry(ROOM, 0.07, 0.09), iron);
+      a.position.set(0, WALL_H - 0.05, v);
+      const b = new Mesh(new BoxGeometry(0.09, 0.07, ROOM), iron);
+      b.position.set(v, WALL_H - 0.05, 0);
+      sh.add(a, b);
+    }
+
+    // An octagonal gold-and-green medallion instead of a round rug.
+    const rings = [[2.4, brass, 0.014], [2.28, mat(0x24463a), 0.02], [1.8, brass, 0.024], [1.74, mat(0x1b362d), 0.028]];
+    for (const [r, m, y] of rings) {
+      const o = new Mesh(new CylinderGeometry(r, r, 0.01, 8), m);
+      o.position.y = y;
+      o.rotation.y = Math.PI / 8;
+      sh.add(o);
+    }
   }
 
   aspect(tex) {
@@ -397,6 +576,7 @@ export class RoomSystem extends createSystem({}) {
 
   buildScene(layout, cs) {
     this.clearBuilt();
+    this.setTheme(cs.theme || 'parlor');
     const cx = this.cx, cz = this.cz;
     const fwd = window.earshotForward;
     if (!fwd) return;
@@ -444,17 +624,24 @@ export class RoomSystem extends createSystem({}) {
     else this.addTable(-2.55, -2.95, true, cs.giftLabel || 'For you');
 
     this.addDoor();
-    this.addEntrance();
-    this.addWindows();
     this.addBanner();
-    this.addChandelier();
-    this.addPaintings();
     this.addStringLights();
     this.addBalloons();
     this.addBuffet();
+    if (this.themeName === 'conservatory') {
+      this.addGardenDoors();
+      this.addPlants();
+    } else {
+      this.addEntrance();
+      this.addWindows();
+      this.addChandelier();
+      this.addPaintings();
+    }
 
-    // Helen waits to the right of the kitchen door.
-    const hw = toWorld(DOOR_X + 1.05, -2.8);
+    // Helen waits where you can see her. A case can choose her spot with "host": [x, z] in cases.js
+    // (she must not stand behind a pair of guests as seen from the middle of the room).
+    const host = cs.host || [DOOR_X + 1.05, -2.8];
+    const hw = toWorld(host[0], host[1]);
     this.helen = this.makeFigure('helen', hw[0], hw[1], FIG_H);
 
     // People who step into view when the case is solved.
@@ -493,9 +680,9 @@ export class RoomSystem extends createSystem({}) {
     const r = gift ? 0.42 : 0.52;
     const g = new Group();
     g.position.set(tx, 0, tz);
-    const cloth = new Mesh(new CylinderGeometry(r, r * 1.1, 0.76, 24), mat(0xf1e4cb));
+    const cloth = new Mesh(new CylinderGeometry(r, r * 1.1, 0.76, 24), mat(this.theme.cloth));
     cloth.position.y = 0.38;
-    const top = new Mesh(new CylinderGeometry(r * 1.02, r * 1.02, 0.025, 24), mat(0xfff7e6));
+    const top = new Mesh(new CylinderGeometry(r * 1.02, r * 1.02, 0.025, 24), mat(this.theme.top));
     top.position.y = 0.77;
     g.add(cloth, top);
     const face = Math.atan2(-tx, -tz); // turn glows toward the middle of the room
@@ -510,7 +697,7 @@ export class RoomSystem extends createSystem({}) {
       card.rotation.y = face;
       g.add(rb1, rb2, card);
     } else {
-      const runner = new Mesh(new BoxGeometry(0.14, 0.006, 1.0), mat(0x8a2a3a));
+      const runner = new Mesh(new BoxGeometry(0.14, 0.006, 1.0), mat(this.theme.runner));
       runner.position.y = 0.786;
       g.add(runner);
       for (let i = 0; i < 4; i++) {
@@ -533,7 +720,17 @@ export class RoomSystem extends createSystem({}) {
       // Pendant lamp with a pool of warm light on the floor.
       const cord = new Mesh(new CylinderGeometry(0.008, 0.008, 0.8, 4), mat(0x1a1a1a));
       cord.position.y = 2.6;
-      const shade = new Mesh(new CylinderGeometry(0.1, 0.26, 0.22, 20, 1, true), mat(0xd9a24f, { side: DoubleSide }));
+      let shade;
+      if (this.theme.lantern) {
+        shade = new Group();
+        const bulb = new Mesh(new SphereGeometry(0.13, 16, 12), mat(0xffd98a));
+        bulb.scale.y = 1.3;
+        const cap = new Mesh(new CylinderGeometry(0.05, 0.1, 0.06, 12), mat(0xc9a24f));
+        cap.position.y = 0.2;
+        shade.add(bulb, cap);
+      } else {
+        shade = new Mesh(new CylinderGeometry(0.1, 0.26, 0.22, 20, 1, true), mat(0xd9a24f, { side: DoubleSide }));
+      }
       shade.position.y = 2.1;
       const lampGlow = new Mesh(new PlaneGeometry(1.6, 1.6), this.glowMat);
       lampGlow.position.y = 1.95;
@@ -582,7 +779,7 @@ export class RoomSystem extends createSystem({}) {
     const g = new Group();
     g.position.set(DOOR_X, 1.05, -3.44);
     const frame = new Mesh(new PlaneGeometry(1.3, 2.2), mat(0x2b1a10));
-    const inside = new Mesh(new PlaneGeometry(0.98, 2.0), new MeshBasicMaterial({ map: kitchenTexture() }));
+    const inside = new Mesh(new PlaneGeometry(0.98, 2.0), new MeshBasicMaterial({ map: this.theme.hall ? hallTexture() : kitchenTexture() }));
     inside.position.z = 0.01;
     const spill = new Mesh(new PlaneGeometry(1.7, 1.7), this.doorGlowMat);
     spill.position.set(0, -0.35, 0.03);
@@ -600,7 +797,7 @@ export class RoomSystem extends createSystem({}) {
     hinge.rotation.y = -1.0;
     g.add(hinge);
 
-    const sign = new Mesh(new PlaneGeometry(0.9, 0.225), new MeshBasicMaterial({ map: kitchenSignTexture() }));
+    const sign = new Mesh(new PlaneGeometry(0.9, 0.225), new MeshBasicMaterial({ map: kitchenSignTexture(this.theme.doorSign) }));
     sign.position.set(0, 1.3, 0.01);
     g.add(sign);
     this.furn.add(g);
@@ -785,7 +982,7 @@ export class RoomSystem extends createSystem({}) {
   }
 
   addBalloons() {
-    const colors = [0xd94f5c, 0xf2c14e, 0xf7efe2, 0x3a8f85];
+    const colors = this.theme.balloons;
     const spots = [[-3.0, -2.4], [3.0, -2.4], [-3.0, 1.8], [3.0, 1.8]];
     spots.forEach((sp, k) => {
       for (let i = 0; i < 3; i++) {
@@ -797,6 +994,62 @@ export class RoomSystem extends createSystem({}) {
         s.position.set(b.position.x, b.position.y - 0.75, b.position.z);
         this.furn.add(s);
       }
+    });
+  }
+
+  // The conservatory's garden doors, on the wall behind you: iron-framed glass onto the night garden.
+  addGardenDoors() {
+    const g = new Group();
+    g.position.set(ENTRANCE_X, 0, 3.43);
+    g.rotation.y = Math.PI; // faces into the room
+    const iron = mat(0x16221f);
+    const frame = new Mesh(new PlaneGeometry(1.95, 2.45), iron);
+    frame.position.y = 1.225;
+    const tex = nightGardenTexture();
+    tex.repeat.set(0.45, 1);
+    tex.offset.set(0.3, 0);
+    const pane = new Mesh(new PlaneGeometry(1.75, 2.3), new MeshBasicMaterial({ map: tex }));
+    pane.position.set(0, 1.15, 0.01);
+    g.add(frame, pane);
+    for (const [bw, bh, by] of [[0.05, 2.3, 1.15], [1.75, 0.04, 0.8], [1.75, 0.04, 1.5]]) {
+      const b = new Mesh(new PlaneGeometry(bw, bh), iron);
+      b.position.set(0, by, 0.02);
+      g.add(b);
+    }
+    for (const s of [-1, 1]) {
+      const handle = new Mesh(new SphereGeometry(0.03, 8, 6), mat(0xc9a24f));
+      handle.position.set(s * 0.1, 1.05, 0.05);
+      g.add(handle);
+    }
+    for (const s of [-1.3, 1.3]) {
+      const lamp = new Mesh(new BoxGeometry(0.08, 0.2, 0.06), mat(0xc9a24f));
+      lamp.position.set(s, 1.9, 0.04);
+      const sconceGlow = new Mesh(new PlaneGeometry(0.9, 0.9), this.glowMat);
+      sconceGlow.position.set(s, 1.9, 0.08);
+      g.add(lamp, sconceGlow);
+    }
+    this.furn.add(g);
+  }
+
+  // Potted palms around the edges of the conservatory.
+  addPlants() {
+    const leafMat = new MeshBasicMaterial({ map: plantTexture(), transparent: true, alphaTest: 0.3, side: DoubleSide });
+    const spots = [[3.2, -3.15, 0.9], [-3.15, -1.6, 0.9], [3.2, -0.6, 1.1], [3.1, 3.0, 1.0], [-3.15, 3.1, 1.1], [-3.15, 1.0, 0.95]];
+    spots.forEach(([x, z, s], k) => {
+      const g = new Group();
+      g.position.set(x, 0, z);
+      const pot = new Mesh(new CylinderGeometry(0.2 * s, 0.15 * s, 0.4 * s, 14), mat(0xb5653a));
+      pot.position.y = 0.2 * s;
+      const rim = new Mesh(new CylinderGeometry(0.22 * s, 0.22 * s, 0.05, 14), mat(0xc4764a));
+      rim.position.y = 0.42 * s;
+      g.add(pot, rim);
+      for (let i = 0; i < 3; i++) {
+        const p = new Mesh(new PlaneGeometry(1.5 * s, 1.5 * s), leafMat);
+        p.position.y = 0.4 * s + 0.75 * s;
+        p.rotation.y = (i * Math.PI) / 3 + k;
+        g.add(p);
+      }
+      this.furn.add(g);
     });
   }
 
