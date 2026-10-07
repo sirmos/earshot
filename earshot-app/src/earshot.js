@@ -23,6 +23,7 @@ const GAZE_MIN = 0.85;     // how directly you must face a conversation for the 
 const QUIET = 0.04;        // chatter volume while a clue / Helen is speaking
 const CARD_DWELL = 1.2;    // seconds to hold a pointer on a card to choose it
 const POINT_COS = Math.cos((8 * Math.PI) / 180); // pointing tolerance (8 degrees)
+const FINALE_HOLD = 4500;  // ms to enjoy the finale before the case file appears
 const STORE = 'earshot-progress';
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -105,10 +106,12 @@ export class EarshotSystem extends createSystem({}) {
     this.hostPlaying = false;
     this.caughtCount = 0;
     this.clueUntil = 0;
+    this.revealTimer = null;
+    this.finishTimer = null;
     this.last = 0;
     this.message = 'Click the page once to start the audio.';
     this.abuf = new Uint8Array(1024);
-    window.earshotState = { phase: 'loading', helenLevel: 0, revealed: false, convos: [] };
+    window.earshotState = { phase: 'loading', helenLevel: 0, revealed: false, celebrate: 0, convos: [] };
 
     this.hud = document.createElement('div');
     this.hud.style.cssText =
@@ -177,7 +180,8 @@ export class EarshotSystem extends createSystem({}) {
   async loadCase(cs, first) {
     this.teardown();
     this.cs = cs;
-    window.earshotCase = cs; // lets the room start loading this case's pictures right away
+    window.earshotCase = cs;     // lets the room start loading this case's pictures right away
+    window.earshotLayout = null; // the room builds only once this case has its own layout
     this.phase = 'loading';
     this.ready = false;
     this.message = 'Loading ' + cs.title + '...';
@@ -259,17 +263,29 @@ export class EarshotSystem extends createSystem({}) {
     this.clueUntil = 0;
     this.placed = false;
 
-    // Give the headset a moment to start the session before Helen begins.
+    // Give the headset a moment to start the session before the room is placed.
     await new Promise((r) => setTimeout(r, first ? 2500 : 800));
     if (this.cs !== cs) return;
 
+    // Place the conversations, then wait until the room for this case has been built,
+    // so you never hear Helen while looking at the previous case's room.
     this.ready = true;
+    this.phase = 'prepare';
+    this.message = 'Setting the scene...';
+    const waitStart = performance.now();
+    while (window.earshotBuilt !== cs.id && performance.now() - waitStart < 15000) {
+      await new Promise((r) => setTimeout(r, 100));
+      if (this.cs !== cs) return;
+    }
+
     this.phase = 'intro';
     this.message = 'Helen is speaking... listen.';
     this.playHost(this.introBuf, () => { if (this.cs === cs && this.phase === 'intro') this.startChatter(); });
   }
 
   teardown() {
+    clearTimeout(this.revealTimer);
+    clearTimeout(this.finishTimer);
     this.stopChatter();
     for (const c of this.convos) {
       try { if (c.clueSrc) c.clueSrc.stop(); } catch (e) { /* already stopped */ }
@@ -306,6 +322,76 @@ export class EarshotSystem extends createSystem({}) {
     dg.gain.value = vol;
     d.connect(dg).connect(this.ctx.destination);
     d.start();
+  }
+
+  // A soft low buzz for a wrong answer.
+  playBuzz() {
+    const ctx = this.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(160, t);
+    o.frequency.linearRampToValueAtTime(105, t + 0.22);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.1, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 700;
+    o.connect(lp).connect(g).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + 0.3);
+  }
+
+  // A rising chime arpeggio, built from oscillators (no audio file needed).
+  playFanfare() {
+    const ctx = this.ctx, t0 = ctx.currentTime + 0.05;
+    const master = ctx.createGain();
+    master.gain.value = 0.3;
+    master.connect(ctx.destination);
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+    notes.forEach((f, i) => {
+      const t = t0 + i * 0.13;
+      const tail = i === notes.length - 1 ? 1.6 : 0.5;
+      for (const [mult, vol, type] of [[1, 1, 'triangle'], [2, 0.3, 'sine']]) {
+        const o = ctx.createOscillator();
+        o.type = type;
+        o.frequency.value = f * mult;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(vol, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + tail);
+        o.connect(g).connect(master);
+        o.start(t);
+        o.stop(t + tail + 0.1);
+      }
+    });
+  }
+
+  // Applause: lots of short filtered noise bursts at random moments.
+  playApplause(seconds) {
+    const ctx = this.ctx, t0 = ctx.currentTime + 0.3;
+    const len = Math.floor(ctx.sampleRate * 0.12);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 2200;
+    bp.Q.value = 0.7;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, t0);
+    master.gain.linearRampToValueAtTime(0.5, t0 + 0.4);
+    master.gain.linearRampToValueAtTime(0.0001, t0 + seconds);
+    bp.connect(master).connect(ctx.destination);
+    const n = Math.floor(seconds * 30);
+    for (let k = 0; k < n; k++) {
+      const s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.playbackRate.value = 0.7 + Math.random() * 0.8;
+      s.connect(bp);
+      s.start(t0 + Math.pow(Math.random(), 0.85) * (seconds - 0.2));
+    }
   }
 
   startChatter() {
@@ -386,6 +472,7 @@ export class EarshotSystem extends createSystem({}) {
         this.solve();
       }
     } else {
+      this.playBuzz();
       it.wrong = true;
       drawCard(it, 0);
       it.tex.needsUpdate = true;
@@ -397,11 +484,23 @@ export class EarshotSystem extends createSystem({}) {
     const cs = this.cs;
     this.phase = 'solved';
     window.earshotState.revealed = true;
+    window.earshotState.celebrate++;  // the room rains confetti
     for (const o of this.convos) o.pulse = 0;
     saveSolved(cs.id);
     this.message = 'SOLVED: ' + cs.finale.text;
+    this.playFanfare();
+    this.playApplause(3.4);
     this.showCards('CASE SOLVED', cs.finale.text, []);
-    this.playHost(this.revealBuf, () => { if (this.cs === cs && this.phase === 'solved') this.finish(); });
+    // Helen gives the solution just after the fanfare, then you get a few seconds to enjoy the finale.
+    this.revealTimer = setTimeout(() => {
+      if (this.cs !== cs || this.phase !== 'solved') return;
+      this.playHost(this.revealBuf, () => {
+        if (this.cs !== cs || this.phase !== 'solved') return;
+        this.finishTimer = setTimeout(() => {
+          if (this.cs === cs && this.phase === 'solved') this.finish();
+        }, FINALE_HOLD);
+      });
+    }, 1600);
   }
 
   finish() {
@@ -500,8 +599,9 @@ export class EarshotSystem extends createSystem({}) {
         mesh.position.set(px + (ffx * Math.cos(a) + rx * Math.sin(a)) * dist, y, pz + (ffz * Math.cos(a) + rz * Math.sin(a)) * dist);
         mesh.lookAt(px, y, pz);
       };
-      put(titleCard.mesh, 0, 1.25, baseY - 0.06);
-      items.forEach((it, i) => put(it.mesh, (i - (items.length - 1) / 2) * 26, 1.15, baseY - 0.38));
+      // Kept low (about 18 and 32 degrees below eye level) so they never cover the people you are looking at.
+      put(titleCard.mesh, 0, 1.2, baseY - 0.4);
+      items.forEach((it, i) => put(it.mesh, (i - (items.length - 1) / 2) * 26, 1.1, baseY - 0.68));
     };
     place();
     this.addToScene(titleCard.mesh);

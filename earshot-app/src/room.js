@@ -247,8 +247,8 @@ function kitchenSignTexture(text) {
 
 // Each case picks one of these settings with "theme" in cases.js.
 const THEMES = {
-  parlor: { chair: 0x3b2417, cushion: 0x7a2a3a, cloth: 0xf1e4cb, top: 0xfff7e6, runner: 0x8a2a3a, balloons: [0xd94f5c, 0xf2c14e, 0xf7efe2, 0x3a8f85], doorSign: 'KITCHEN', hall: false, lantern: false },
-  conservatory: { chair: 0x1b2e27, cushion: 0xd9cfb2, cloth: 0xe6dfc4, top: 0xfff8e0, runner: 0xc9a24f, balloons: [0xe8c36a, 0xf7efe2, 0x9bb59a, 0xd9b45a], doorSign: 'HOUSE', hall: true, lantern: true },
+  parlor: { chair: 0xc9a24f, cushion: 0x7a2a3a, flowers: [0xe9a8b6, 0xf7efe2, 0xd94f5c], cloth: 0xf1e4cb, top: 0xfff7e6, runner: 0x8a2a3a, balloons: [0xd94f5c, 0xf2c14e, 0xf7efe2, 0x3a8f85], doorSign: 'KITCHEN', hall: false, lantern: false },
+  conservatory: { chair: 0xd8b86a, cushion: 0xf4ecd6, flowers: [0xf7efe2, 0xe8c36a, 0xe9a8b6], cloth: 0x7a2a3a, top: 0xfff8e0, runner: 0xc9a24f, balloons: [0xe8c36a, 0xf7efe2, 0x9bb59a, 0xd9b45a], doorSign: 'HOUSE', hall: true, lantern: true },
 };
 
 // A moonlit garden seen through the conservatory glass.
@@ -372,6 +372,10 @@ export class RoomSystem extends createSystem({}) {
     this.built = [];
     this.furn = null;
     this.locket = null;
+    this.pianoLid = null;
+    this.glows = [];
+    this.confetti = null;
+    this.lastCelebrate = 0;
 
     // Character pictures are loaded per case (see cases.js), the first time a case needs them.
     this.tex = {};
@@ -413,6 +417,12 @@ export class RoomSystem extends createSystem({}) {
     const w = this.world;
     if (w && w.scene && w.scene.add) w.scene.add(obj);
     else w.createTransformEntity(obj);
+  }
+
+  // Glow cards that always turn to face the player (a flat glow looks like an oval from the side).
+  billboard(mesh) {
+    this.glows.push(mesh);
+    return mesh;
   }
 
   // The pictures a case needs: [name, url]. "shared" pictures (Helen) always come from characters/.
@@ -573,6 +583,8 @@ export class RoomSystem extends createSystem({}) {
     this.helen = null;
     this.panel = null;
     this.locket = null;
+    this.pianoLid = null;
+    this.glows = [];
     if (this.furn && this.furn.parent) this.furn.parent.remove(this.furn);
     this.furn = new Group();
     this.party.add(this.furn);
@@ -685,6 +697,7 @@ export class RoomSystem extends createSystem({}) {
       this.furn.add(grp);
       this.panel = { grp, pic, vis: 0 };
     }
+    window.earshotBuilt = cs.id; // tells the game this case's room is ready
   }
 
   addTable(tx, tz, gift, label) {
@@ -695,7 +708,9 @@ export class RoomSystem extends createSystem({}) {
     cloth.position.y = 0.38;
     const top = new Mesh(new CylinderGeometry(r * 1.02, r * 1.02, 0.025, 24), mat(this.theme.top));
     top.position.y = 0.77;
-    g.add(cloth, top);
+    const hem = new Mesh(new CylinderGeometry(r * 1.097, r * 1.1, 0.04, 24), mat(0xc9a24f));
+    hem.position.y = 0.04;
+    g.add(cloth, top, hem);
     const face = Math.atan2(-tx, -tz); // turn glows toward the middle of the room
 
     if (gift) {
@@ -723,12 +738,22 @@ export class RoomSystem extends createSystem({}) {
       candle.position.y = 0.86;
       const flame = new Mesh(new SphereGeometry(0.022, 8, 6), mat(0xffc15a));
       flame.position.y = 0.97;
-      const glow = new Mesh(new PlaneGeometry(0.8, 0.8), this.glowMat);
+      const glow = this.billboard(new Mesh(new PlaneGeometry(0.8, 0.8), this.glowMat));
       glow.position.y = 0.98;
-      glow.rotation.y = face;
       g.add(candle, flame, glow);
 
-      // Pendant lamp with a pool of warm light on the floor.
+      // A small flower arrangement in a glass vase.
+      const vase = new Mesh(new CylinderGeometry(0.035, 0.028, 0.14, 10), mat(0x9bb59a));
+      vase.position.set(0, 0.86, -0.28);
+      g.add(vase);
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const fl = new Mesh(new SphereGeometry(0.045, 8, 6), mat(this.theme.flowers[i % 3]));
+        fl.position.set(Math.cos(a) * 0.045, 0.96 + (i % 2) * 0.03, -0.28 + Math.sin(a) * 0.045);
+        g.add(fl);
+      }
+
+      // Pendant lamp (a glass lantern in the conservatory) with a pool of warm light on the floor.
       const cord = new Mesh(new CylinderGeometry(0.008, 0.008, 0.8, 4), mat(0x1a1a1a));
       cord.position.y = 2.6;
       let shade;
@@ -743,13 +768,13 @@ export class RoomSystem extends createSystem({}) {
         shade = new Mesh(new CylinderGeometry(0.1, 0.26, 0.22, 20, 1, true), mat(0xd9a24f, { side: DoubleSide }));
       }
       shade.position.y = 2.1;
-      const lampGlow = new Mesh(new PlaneGeometry(1.6, 1.6), this.glowMat);
+      const lampGlow = this.billboard(new Mesh(new PlaneGeometry(1.6, 1.6), this.glowMat));
       lampGlow.position.y = 1.95;
-      lampGlow.rotation.y = face;
       const pool = new Mesh(new PlaneGeometry(3.2, 3.2), this.poolMat);
       pool.rotation.x = -Math.PI / 2;
       pool.position.y = 0.03;
-      g.add(cord, shade, lampGlow, pool);
+      if (!this.theme.lantern) g.add(pool); // the conservatory floor is already bright
+      g.add(cord, shade, lampGlow);
     }
     this.furn.add(g);
   }
@@ -766,33 +791,33 @@ export class RoomSystem extends createSystem({}) {
       leg.position.set(lx, 0.34, lz);
       g.add(leg);
     }
+    // The lid stays shut until the case is solved, then swings open (see update).
     const lidHinge = new Group();
     lidHinge.position.set(0, 0.97, -0.45);
     const lidGeo = new BoxGeometry(1.3, 0.03, 0.85);
     lidGeo.translate(0, 0, 0.425);
     lidHinge.add(new Mesh(lidGeo, mat(0x241a16)));
-    lidHinge.rotation.x = -0.75;
+    lidHinge.rotation.x = 0;
     g.add(lidHinge);
+    this.pianoLid = lidHinge;
     const keys = new Mesh(new BoxGeometry(1.1, 0.035, 0.2), mat(0xf6ead3));
     keys.position.set(0, 0.9, 0.52);
     const keyShelf = new Mesh(new BoxGeometry(1.2, 0.05, 0.12), mat(0x17110f));
     keyShelf.position.set(0, 0.86, 0.48);
     g.add(keyShelf, keys);
-    const glow = new Mesh(new PlaneGeometry(1.4, 1.4), this.glowMat);
+    const glow = this.billboard(new Mesh(new PlaneGeometry(1.4, 1.4), this.glowMat));
     glow.position.set(0, 1.3, 0.1);
-    glow.rotation.y = Math.atan2(2.65, 2.95);
     g.add(glow);
 
     // Beatrice's locket: appears on the piano once the case is solved.
     const lk = new Group();
-    lk.position.set(0, 1.0, -0.05);
+    lk.position.set(0, 1.06, -0.05);
     const lbody = new Mesh(new SphereGeometry(0.07, 14, 10), mat(0xf2c14e));
     lbody.scale.set(1, 1.15, 0.45);
     const lchain = new Mesh(new CylinderGeometry(0.005, 0.005, 0.28, 4), mat(0xd9a24f));
     lchain.position.y = 0.17;
-    const lglow = new Mesh(new PlaneGeometry(1.0, 1.0), this.glowMat);
+    const lglow = this.billboard(new Mesh(new PlaneGeometry(1.0, 1.0), this.glowMat));
     lglow.position.z = 0.06;
-    lglow.rotation.y = Math.atan2(2.65, 2.95);
     lk.add(lbody, lchain, lglow);
     lk.visible = false;
     g.add(lk);
@@ -862,7 +887,7 @@ export class RoomSystem extends createSystem({}) {
     for (const s of [-1.3, 1.3]) {
       const lamp = new Mesh(new BoxGeometry(0.08, 0.2, 0.06), mat(0xd9a24f));
       lamp.position.set(s, 1.9, 0.04);
-      const sconceGlow = new Mesh(new PlaneGeometry(0.9, 0.9), this.glowMat);
+      const sconceGlow = this.billboard(new Mesh(new PlaneGeometry(0.9, 0.9), this.glowMat));
       sconceGlow.position.set(s, 1.9, 0.08);
       g.add(lamp, sconceGlow);
     }
@@ -901,19 +926,21 @@ export class RoomSystem extends createSystem({}) {
     }
   }
 
-  // A small cake and plates on a side table beside the entrance, so turning around is rewarded.
+  // A cake and champagne flutes on a side table beside the entrance, so turning around is rewarded.
   addBuffet() {
     const g = new Group();
     g.position.set(-1.3, 0, 3.0);
-    const body = new Mesh(new BoxGeometry(1.8, 0.76, 0.55), mat(0xf1e4cb));
+    const body = new Mesh(new BoxGeometry(1.8, 0.76, 0.55), mat(this.theme.cloth));
     body.position.y = 0.38;
-    const top = new Mesh(new BoxGeometry(1.84, 0.025, 0.59), mat(0xfff7e6));
+    const top = new Mesh(new BoxGeometry(1.84, 0.025, 0.59), mat(this.theme.top));
     top.position.y = 0.77;
+    const hem = new Mesh(new BoxGeometry(1.82, 0.04, 0.57), mat(0xc9a24f));
+    hem.position.y = 0.04;
     const t1 = new Mesh(new CylinderGeometry(0.2, 0.2, 0.12, 24), mat(0xf6d7de));
     t1.position.y = 0.84;
     const t2 = new Mesh(new CylinderGeometry(0.14, 0.14, 0.11, 24), mat(0xe9a8b6));
     t2.position.y = 0.955;
-    g.add(body, top, t1, t2);
+    g.add(body, top, hem, t1, t2);
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2;
       const c = new Mesh(new CylinderGeometry(0.008, 0.008, 0.07, 6), mat(0xfff1cf));
@@ -927,7 +954,12 @@ export class RoomSystem extends createSystem({}) {
       p.position.set(i * 0.24, 0.795, 0);
       g.add(p);
     }
-    const glow = new Mesh(new PlaneGeometry(0.9, 0.9), this.glowMat);
+    for (const x of [0.42, 0.52, 0.62, -0.42, -0.52]) {
+      const fl = new Mesh(new CylinderGeometry(0.018, 0.012, 0.13, 8), mat(0xe8f0f2));
+      fl.position.set(x, 0.86, 0.14);
+      g.add(fl);
+    }
+    const glow = this.billboard(new Mesh(new PlaneGeometry(0.9, 0.9), this.glowMat));
     glow.position.y = 1.08;
     g.add(glow);
     this.furn.add(g);
@@ -957,12 +989,9 @@ export class RoomSystem extends createSystem({}) {
     const down = new Mesh(new PlaneGeometry(1.8, 1.8), this.glowMat);
     down.rotation.x = Math.PI / 2;
     down.position.y = -0.05;
-    const cross1 = new Mesh(new PlaneGeometry(1.2, 1.2), this.glowMat);
-    cross1.position.y = 0.1;
-    const cross2 = new Mesh(new PlaneGeometry(1.2, 1.2), this.glowMat);
-    cross2.position.y = 0.1;
-    cross2.rotation.y = Math.PI / 2;
-    g.add(down, cross1, cross2);
+    const halo = this.billboard(new Mesh(new PlaneGeometry(1.5, 1.5), this.glowMat));
+    halo.position.y = 0.1;
+    g.add(down, halo);
     this.furn.add(g);
   }
 
@@ -1007,6 +1036,7 @@ export class RoomSystem extends createSystem({}) {
     }
   }
 
+  // Balloons tied to little gold weights on the floor.
   addBalloons() {
     const colors = this.theme.balloons;
     const spots = [[-3.0, -2.4], [3.0, -2.4], [-3.0, 1.8], [3.0, 1.8]];
@@ -1016,16 +1046,61 @@ export class RoomSystem extends createSystem({}) {
         b.scale.set(0.17, 0.21, 0.17);
         b.position.set(sp[0] + (i - 1) * 0.18, 2.35 + ((i + k) % 2) * 0.18, sp[1] + (i % 2) * 0.1);
         this.furn.add(b);
-        const s = new Mesh(new CylinderGeometry(0.004, 0.004, 1.3, 4), mat(0xeeeeee));
-        s.position.set(b.position.x, b.position.y - 0.75, b.position.z);
-        this.furn.add(s);
+        const len = b.position.y - 0.1;
+        const s = new Mesh(new CylinderGeometry(0.004, 0.004, len, 4), mat(0xeeeeee));
+        s.position.set(b.position.x, 0.1 + len / 2, b.position.z);
+        const wt = new Mesh(new CylinderGeometry(0.025, 0.03, 0.06, 8), mat(0xc9a24f));
+        wt.position.set(b.position.x, 0.04, b.position.z);
+        this.furn.add(s, wt);
       }
     });
   }
 
-  // Chairs pulled up to each guest table (on the sides, so the pairs stay visible in front).
+  // Confetti that rains down when a case is solved.
+  startConfetti() {
+    if (!this.confetti) {
+      const cols = [0xf2c14e, 0xf7efe2, 0xd94f5c, 0x3a8f85, 0xe9a8b6].map((c) => new MeshBasicMaterial({ color: c, side: DoubleSide }));
+      const geo = new PlaneGeometry(0.05, 0.08);
+      this.confetti = { pieces: [], active: false };
+      for (let i = 0; i < 90; i++) {
+        const m = new Mesh(geo, cols[i % cols.length]);
+        m.visible = false;
+        this.addToScene(m);
+        this.confetti.pieces.push({ m, vy: 0, sp: 0, ph: 0 });
+      }
+    }
+    const C = this.confetti;
+    C.active = true;
+    for (const p of C.pieces) {
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 2.8;
+      p.m.position.set(this.cx + Math.cos(a) * r, this.floorY + 2.4 + Math.random() * 0.5, this.cz + Math.sin(a) * r);
+      p.vy = -(0.45 + Math.random() * 0.5);
+      p.sp = 1 + Math.random() * 3;
+      p.ph = Math.random() * 6.28;
+      p.m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+      p.m.visible = true;
+    }
+  }
+
+  stepConfetti(dt, t) {
+    const C = this.confetti;
+    if (!C || !C.active) return;
+    let any = false;
+    for (const p of C.pieces) {
+      if (!p.m.visible) continue;
+      p.m.position.y += p.vy * dt;
+      p.m.position.x += Math.sin(t * p.sp + p.ph) * 0.25 * dt;
+      p.m.rotation.x += dt * p.sp;
+      p.m.rotation.z += dt * 1.3;
+      if (p.m.position.y <= this.floorY + 0.03) p.m.visible = false;
+      else any = true;
+    }
+    if (!any) C.active = false;
+  }
+
+  // Gold Chiavari-style chairs pulled up to each guest table (on the sides, so the pairs stay visible in front).
   addChairs(tables, hasPiano) {
-    const wood = mat(this.theme.chair);
+    const frame = mat(this.theme.chair);
     const cush = mat(this.theme.cushion);
     for (const [tx, tz] of tables) {
       const len = Math.hypot(tx, tz) || 1;
@@ -1039,17 +1114,28 @@ export class RoomSystem extends createSystem({}) {
         const c = new Group();
         c.position.set(cx, 0, cz);
         c.rotation.y = Math.atan2(tx - cx, tz - cz); // front of the chair faces its table
-        const base = new Mesh(new BoxGeometry(0.44, 0.04, 0.44), wood);
-        base.position.y = 0.42;
-        const seat = new Mesh(new BoxGeometry(0.42, 0.05, 0.42), cush);
-        seat.position.y = 0.46;
-        const back = new Mesh(new BoxGeometry(0.42, 0.46, 0.05), wood);
-        back.position.set(0, 0.7, -0.2);
-        c.add(base, seat, back);
-        for (const [lx, lz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) {
-          const leg = new Mesh(new BoxGeometry(0.04, 0.4, 0.04), wood);
-          leg.position.set(lx, 0.2, lz);
+        const seat = new Mesh(new BoxGeometry(0.4, 0.03, 0.4), frame);
+        seat.position.y = 0.43;
+        const pad = new Mesh(new BoxGeometry(0.35, 0.05, 0.35), cush);
+        pad.position.y = 0.47;
+        c.add(seat, pad);
+        for (const [lx, lz] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]]) {
+          const leg = new Mesh(new CylinderGeometry(0.014, 0.011, 0.42, 8), frame);
+          leg.position.set(lx, 0.21, lz);
           c.add(leg);
+        }
+        for (const lx of [-0.17, 0.17]) {
+          const post = new Mesh(new CylinderGeometry(0.012, 0.012, 0.5, 8), frame);
+          post.position.set(lx, 0.67, -0.17);
+          c.add(post);
+        }
+        const topRail = new Mesh(new BoxGeometry(0.38, 0.035, 0.03), frame);
+        topRail.position.set(0, 0.93, -0.17);
+        c.add(topRail);
+        for (const y of [0.62, 0.78]) {
+          const rung = new Mesh(new BoxGeometry(0.34, 0.016, 0.016), frame);
+          rung.position.set(0, y, -0.17);
+          c.add(rung);
         }
         this.furn.add(c);
       }
@@ -1108,7 +1194,7 @@ export class RoomSystem extends createSystem({}) {
     for (const s of [-1.3, 1.3]) {
       const lamp = new Mesh(new BoxGeometry(0.08, 0.2, 0.06), mat(0xc9a24f));
       lamp.position.set(s, 1.9, 0.04);
-      const sconceGlow = new Mesh(new PlaneGeometry(0.9, 0.9), this.glowMat);
+      const sconceGlow = this.billboard(new Mesh(new PlaneGeometry(0.9, 0.9), this.glowMat));
       sconceGlow.position.set(s, 1.9, 0.08);
       g.add(lamp, sconceGlow);
     }
@@ -1210,8 +1296,18 @@ export class RoomSystem extends createSystem({}) {
       }
     }
 
+    // Warm glows always face the player (a flat glow looks like an oval from the side).
+    for (const gl of this.glows) gl.lookAt(hx, m[13], hz);
+
     const st = window.earshotState;
     if (!st) return;
+
+    // Confetti when a case is solved.
+    if (st.celebrate !== this.lastCelebrate) {
+      this.lastCelebrate = st.celebrate;
+      if (st.celebrate > 0) this.startConfetti();
+    }
+    this.stepConfetti(dt, t);
 
     // Guests: the speaker's mouth moves and body nods with their voice.
     for (const gst of this.guests) {
@@ -1239,6 +1335,7 @@ export class RoomSystem extends createSystem({}) {
       this.locket.grp.scale.setScalar(0.2 + 0.8 * this.locket.vis);
       this.locket.glow.scale.setScalar(1 + 0.15 * Math.sin(t * 3));
     }
+    if (this.pianoLid) this.pianoLid.rotation.x = -0.75 * (this.locket ? this.locket.vis : 0);
     if (this.panel) {
       this.panel.vis = solved ? Math.min(1, this.panel.vis + dt * 0.5) : 0;
       this.panel.grp.visible = this.panel.vis > 0;
