@@ -632,8 +632,13 @@ export class EarshotSystem extends createSystem({}) {
         mesh.lookAt(px, y, pz);
       };
       // Kept low (about 18 and 32 degrees below eye level) so they never cover the people you are looking at.
-      put(titleCard.mesh, 0, 1.2, baseY - 0.4);
-      items.forEach((it, i) => put(it.mesh, (i - (items.length - 1) / 2) * 26, 1.1, baseY - 0.68));
+      // In the flat desktop preview the view is much narrower than in a headset, so lift the cards into frame.
+      const vs = this.world && this.world.visibilityState;
+      const desk = !!vs && vs.value === 'non-immersive';
+      const titleY = desk ? baseY - 0.08 : baseY - 0.4, cardY = desk ? baseY - 0.4 : baseY - 0.68;
+      const dist = desk ? 1.5 : 1.1, gap = desk ? 22 : 26;
+      put(titleCard.mesh, 0, desk ? 1.5 : 1.2, titleY);
+      items.forEach((it, i) => put(it.mesh, (i - (items.length - 1) / 2) * gap, dist, cardY));
     };
     place();
     this.addToScene(titleCard.mesh);
