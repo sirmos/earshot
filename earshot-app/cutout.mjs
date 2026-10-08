@@ -111,11 +111,10 @@ async function load(file) {
   return { data: Buffer.from(data), w: info.width, h: info.height };
 }
 
-async function save(file, img, box) {
+async function save(file, img, box, outW, outH) {
   let s = sharp(img.data, { raw: { width: img.w, height: img.h, channels: 4 } });
   if (box) s = s.extract({ left: box.x0, top: box.y0, width: box.x1 - box.x0 + 1, height: box.y1 - box.y0 + 1 });
-  const h = box ? box.y1 - box.y0 + 1 : img.h;
-  if (h > MAX_H) s = s.resize({ height: MAX_H, kernel: 'lanczos3' });
+  s = s.resize({ width: outW, height: outH, fit: 'fill', kernel: 'lanczos3' });
   const out = await s.png({ compressionLevel: 9 }).toBuffer();
   fs.writeFileSync(file, out);
   return out.length;
@@ -142,17 +141,35 @@ for (const name of names) {
   if (skip) { console.log('skip  ' + name + '  (already cut out; use --force to redo)'); skipped++; continue; }
 
   const results = imgs.map(({ img }) => cutout(img.data, img.w, img.h));
-  // The mouth-open picture must be cropped exactly like the closed one so the swap does not jump.
-  let box = null;
+  const bw = (b) => b.x1 - b.x0 + 1, bh = (b) => b.y1 - b.y0 + 1;
+
+  // Work out each picture's crop box and the one final size shared by the closed and talking pictures.
+  const base = imgs[0].img;
+  const sameCanvas = imgs.every(({ img }) => img.w === base.w && img.h === base.h);
+  let boxes = imgs.map(() => null);
   if (TRIM) {
-    const boxes = results.map((r) => r.box).filter(Boolean);
-    if (boxes.length) box = { x0: Math.min(...boxes.map((b) => b.x0)), y0: Math.min(...boxes.map((b) => b.y0)), x1: Math.max(...boxes.map((b) => b.x1)), y1: Math.max(...boxes.map((b) => b.y1)) };
+    const found = results.map((r) => r.box);
+    if (sameCanvas) {
+      // Same canvas: crop both with the union box so the mouth swap lines up exactly.
+      const ok = found.filter(Boolean);
+      const u = ok.length ? { x0: Math.min(...ok.map((b) => b.x0)), y0: Math.min(...ok.map((b) => b.y0)), x1: Math.max(...ok.map((b) => b.x1)), y1: Math.max(...ok.map((b) => b.y1)) } : null;
+      boxes = imgs.map(() => u);
+    } else {
+      boxes = found; // different canvases: crop each to its own figure, then scale to the same size
+    }
   }
-  for (let k = 0; k < imgs.length; k++) {
-    const { f, img } = imgs[k], r = results[k];
-    const bytes = await save(path.join(dir, f), img, box);
+  const refW = boxes[0] ? bw(boxes[0]) : base.w, refH = boxes[0] ? bh(boxes[0]) : base.h;
+  const k = Math.min(1, MAX_H / refH);
+  const outW = Math.max(1, Math.round(refW * k)), outH = Math.max(1, Math.round(refH * k));
+  if (!sameCanvas) {
+    const odd = imgs.some((_, i) => boxes[i] && Math.abs(bh(boxes[i]) / bw(boxes[i]) - refH / refW) > 0.05 * (refH / refW));
+    console.log('note  ' + name + ': the two pictures have different sizes; matched to the closed-mouth one' + (odd ? ' (the figure shapes differ by more than 5%, check the mouth swap)' : ''));
+  }
+  for (let j = 0; j < imgs.length; j++) {
+    const { f, img } = imgs[j], r = results[j];
+    const bytes = await save(path.join(dir, f), img, boxes[j], outW, outH);
     const warn = r.keptPct > 70 ? '  <-- WARNING: little removed, is the background plain?' : r.keptPct < 8 ? '  <-- WARNING: almost everything removed' : '';
-    console.log('done  ' + f.padEnd(18) + ' bg rgb(' + r.bg.join(',') + ')  figure ' + r.keptPct.toFixed(0) + '%  ' + (bytes / 1024).toFixed(0) + ' KB' + warn);
+    console.log('done  ' + f.padEnd(18) + ' bg rgb(' + r.bg.join(',') + ')  figure ' + r.keptPct.toFixed(0) + '%  ' + outW + 'x' + outH + '  ' + (bytes / 1024).toFixed(0) + ' KB' + warn);
   }
   done++;
 }
