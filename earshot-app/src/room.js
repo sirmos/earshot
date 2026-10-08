@@ -20,7 +20,7 @@ const ROOM = 7;
 const WALL_H = 3;
 const DOOR_X = 1.9; // kitchen door sits on the right of the back wall, clear of the front table
 const ENTRANCE_X = 1.2; // main entrance, on the wall behind you
-const PAIR_TURN = 0.5; // radians: how far each guest turns toward their conversation partner
+const PAIR_TURN = 0.9; // radians: how far each guest turns toward their conversation partner
 const mat = (color, extra) => new MeshBasicMaterial({ color, ...extra });
 
 // Repeat a texture. 1000 = RepeatWrapping.
@@ -628,7 +628,7 @@ export class RoomSystem extends createSystem({}) {
       const bx = p.x + dx * 0.55, bz = p.z + dz * 0.55;
       grp.pair.forEach((name, j) => {
         const k = j === 0 ? -1 : 1;
-        const f = this.makeFigure(name, bx + sx * 0.36 * k, bz + sz * 0.36 * k, FIG_H);
+        const f = this.makeFigure(name, bx + sx * 0.3 * k, bz + sz * 0.3 * k, FIG_H);
         if (f) {
           f.partner = [-sx * k, -sz * k]; // direction toward the other person of the pair
           this.guests.push({ fig: f, pair: i, idx: j });
@@ -1283,7 +1283,10 @@ export class RoomSystem extends createSystem({}) {
     // Build the guests and decor once this case's pictures are loaded and the layout is known.
     const cs = window.earshotCase;
     const layout = window.earshotLayout;
-    if (cs && layout) {
+    const gala = !!(cs && cs.theme === 'gala'); // the gala has its own scene (gala.js)
+    this.party.visible = !gala;
+    if (gala && this.layoutKey) { this.clearBuilt(); this.layoutKey = ''; }
+    if (cs && layout && !gala) {
       const list = this.imageList(cs);
       this.ensureImages(list);
       const done = list.every(([k]) => this.tex[k] || this.failed.has(k));
