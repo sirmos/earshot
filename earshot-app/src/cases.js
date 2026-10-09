@@ -91,6 +91,11 @@ export const CASES = [
     minNotes: 6,    // notes needed before you may accuse early (look down at your notebook)
     art: 'characters/case3/',
     images: both('kai', 'nia', 'dev', 'ximena', 'jonah', 'amara', 'elias', 'sooah', 'tobias', 'imani', 'gus', 'sienna', 'marcus', 'lola', 'idris', 'tess', 'remy', 'jules'),
+    // Real-world heights in metres, so tall people look tall (1.72 is the standard figure size).
+    heights: {
+      kai: 1.76, nia: 1.68, dev: 1.75, ximena: 1.64, jonah: 1.78, amara: 1.70, elias: 1.75, sooah: 1.62, tobias: 1.92,
+      imani: 1.65, gus: 1.72, sienna: 1.66, marcus: 1.90, lola: 1.60, idris: 1.80, tess: 1.62, remy: 1.76, jules: 1.74,
+    },
     host: 'jules',
     hostAt: [1.9, -2.4],
     // Where you can walk to: 'at' is where your head goes, 'look' is what the camera turns toward, 'group' is the conversation there.
@@ -151,8 +156,9 @@ export const CASES = [
     ],
     finale: {
       text: 'Tess took the Golden Waveform to the pool house so the engraver could fix a misspelled nameplate.',
-      appear: [{ name: 'tess', x: 8.0, z: -9.65 }],
-      stop: { at: [2.6, -8.2], look: [9.6, -10.4] },   // the camera walks here to watch the pool house open
+      appear: [{ name: 'tess', x: 7.75, z: -10.5 }],
+      hostPath: [[3.7, -4.5], [3.9, -9.0], [7.35, -9.4]],  // Jules walks this route to stand beside Tess while he reveals the answer
+      stop: { at: [4.0, -8.7], look: [8.0, -10.0] },       // the camera walks here to watch the pool house open
       picture: null,
     },
   },

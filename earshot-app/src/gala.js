@@ -150,12 +150,12 @@ function rugTexture() {
 
 // ---------- how each conversation is arranged (local frame: +z points at the viewer, the focus is the table) ----------
 const LAYOUTS = {
-  bar: { pts: [[0, -1.5], [-0.85, -0.15], [0.8, -0.05]], focus: [0, -0.6] },                 // bartender behind, two at the counter
-  lounge: { pts: [[-1.05, 0.3], [0.05, 0.9], [1.05, 0.3]], focus: [0, -0.1] },
-  stage: { pts: [[-1.2, 0.0], [0, -0.15], [1.2, 0.0]], focus: [0, -0.1] },
-  bistro: { pts: [[-0.75, 0.2], [0.75, 0.2]], focus: [0, -0.1] },
-  tall: { pts: [[-1.1, 0.15], [-0.42, 0.85], [0.42, 0.85], [1.1, 0.15]], focus: [0, -0.3] },
-  door: { pts: [[-0.6, -0.1], [0.6, 0.15]], focus: [0, 0] },
+  bar: { pts: [[0, -1.5], [-0.62, -0.32], [0.55, -0.26]], focus: [0, -0.7] },                  // bartender behind, two at the counter
+  lounge: { pts: [[-0.72, 0.0], [0, -0.34], [0.72, 0.0]], focus: [0, -0.1] },
+  stage: { pts: [[-0.95, 0.0], [0, -0.14], [0.95, 0.0]], focus: [0, -0.1] },
+  bistro: { pts: [[-0.54, -0.08], [0.54, -0.08]], focus: [0, -0.08] },
+  tall: { pts: [[-0.86, -0.42], [-0.32, -0.95], [0.32, -0.95], [0.86, -0.42]], focus: [0, -0.3] }, // an arc behind the table
+  door: { pts: [[-0.38, 0.0], [0.38, 0.1]], focus: [0, 0.05] },
 };
 
 export class GalaSystem extends createSystem({}) {
@@ -170,7 +170,7 @@ export class GalaSystem extends createSystem({}) {
     this.actors = []; this.glows = []; this.finalists = []; this.host = null; this.markers = []; this.motes = []; this.bobs = [];
     this.waterA = null; this.waterB = null; this.doorHinge = null; this.trophy = null; this.fire = null; this.led = null;
     this.open = 0; this.lastCelebrate = 0; this.wasRevealed = false;
-    this.glide = null; this.interior = null; this.idc = 0; this.cool = 0; this.vig = null; this.avoid = []; this.cache = new Map(); this.ledT = 0; this.warnedRig = false;
+    this.glide = null; this.interior = null; this.finaleSpot = null; this.hostPath = null; this.hostT = 0; this.idc = 0; this.cool = 0; this.vig = null; this.avoid = []; this.cache = new Map(); this.ledT = 0; this.warnedRig = false;
 
     this.glowMap = glowTexture();
     this.softMap = softTexture();
@@ -248,6 +248,8 @@ export class GalaSystem extends createSystem({}) {
   makeFigure(name, x, z, h, lift, face, turn) {
     const closed = this.tex[name];
     if (!closed) return null;
+    const real = (window.earshotCase && window.earshotCase.heights && window.earshotCase.heights[name]) || 1.72;
+    h = h * real / 1.72;                                   // tall people look tall
     const talk = this.tex[name + '-talk'] || closed;
     const geom = new PlaneGeometry(1, 1);
     geom.translate(0, 0.5, 0);
@@ -262,7 +264,7 @@ export class GalaSystem extends createSystem({}) {
     g.add(shadow, mesh);
     g.position.set(x, lift || 0, z);
     this.root.add(g);
-    return { name, g, mesh, material, closed, talk, h, lift: lift || 0, phase: Math.random() * 6.28, vis: 1, face: face || null, turn: turn === undefined ? 0.95 : turn };
+    return { name, g, mesh, material, closed, talk, h, lift: lift || 0, phase: Math.random() * 6.28, vis: 1, face: face || null, turn: turn === undefined ? 1.05 : turn, walk: false };
   }
 
   // Each guest turns toward the person they are talking with, but never so far that the flat picture goes edge-on to you.
@@ -276,7 +278,7 @@ export class GalaSystem extends createSystem({}) {
     }
     f.g.rotation.y = yaw;
     f.g.rotation.z = Math.sin(t * 2.2 + f.phase) * 0.012 + (speaking ? Math.sin(t * 5 + f.phase) * 0.025 * amp : 0);
-    f.g.position.y = f.lift + (speaking ? Math.abs(Math.sin(t * 6 + f.phase)) * 0.012 * amp : 0);
+    f.g.position.y = f.lift + (f.walk ? Math.abs(Math.sin(t * 7)) * 0.03 : 0) + (speaking ? Math.abs(Math.sin(t * 6 + f.phase)) * 0.012 * amp : 0);
     const open = speaking && level > 0.04 && Math.sin(t * 16 + f.phase) > -0.1;
     const tx = open ? f.talk : f.closed;
     if (f.material.map !== tx) f.material.map = tx;
@@ -287,7 +289,7 @@ export class GalaSystem extends createSystem({}) {
     while (this.root.children.length) this.root.remove(this.root.children[0]);
     this.actors = []; this.glows = []; this.finalists = []; this.host = null; this.markers = []; this.motes = []; this.bobs = [];
     this.waterA = null; this.waterB = null; this.doorHinge = null; this.trophy = null; this.fire = null; this.led = null;
-    this.open = 0; this.avoid = []; this.glide = null; this.interior = null;
+    this.open = 0; this.avoid = []; this.glide = null; this.interior = null; this.finaleSpot = null; this.hostPath = null; this.hostT = 0;
   }
 
   // ---------- the world ----------
@@ -320,6 +322,17 @@ export class GalaSystem extends createSystem({}) {
     for (const a of (cs.finale && cs.finale.appear) || []) {
       const f = this.makeFigure(a.name, a.x, a.z, FIG_H, 0, null, 0.2);
       if (f) { f.vis = 0; f.g.visible = false; f.material.opacity = 0; this.finalists.push(f); }
+    }
+    const fin = cs.finale || {};
+    this.hostPath = this.host && fin.hostPath ? [cs.hostAt, ...fin.hostPath] : null;
+    this.hostT = 0;
+    if (fin.appear && fin.appear[0]) {
+      const a = fin.appear[0];
+      const sp = new Group(); sp.position.set(a.x, 0, a.z); sp.visible = false; this.root.add(sp);
+      this.cone(0, 2.9, 0, 0.1, 0.95, 5.8, 0xfff2d0, 0.5, sp);
+      this.decal(0, 0, 2.8, 0xfff2d0, 0.6, sp);
+      this.glow(0, 1.0, 0, 1.6, sp, 0xffe6b0, 0.45);
+      this.finaleSpot = sp;
     }
     this.buildMarkers(cs);
     this.buildMotes();
@@ -441,8 +454,7 @@ export class GalaSystem extends createSystem({}) {
       for (let k = 0; k < 24; k++) {
         const f = k / 23;
         const x = -12.2 + 24.4 * f, y = 3.6 - 0.55 * Math.sin(Math.PI * f);
-        const b = new Mesh(this.bulbGeo, this.mat(0xffe2a8)); b.position.set(x, y, z); R.add(b);
-        if (k % 2 === 0) this.glow(x, y, z, 0.42, R, 0xffc878, 0.6);
+        if (k % 2 === 0) { const b = new Mesh(this.bulbGeo, this.mat(0xffe2a8)); b.position.set(x, y, z); R.add(b); this.glow(x, y, z, 0.42, R, 0xffc878, 0.6); }
       }
     }
     // Lanterns along the walls.
@@ -496,7 +508,7 @@ export class GalaSystem extends createSystem({}) {
     this.doorHinge = hinge;
     this.plane(1.9, 0.36, this.tmat(signTexture('POOL HOUSE', '#6af0e4'), { transparent: true }), 0, 2.45, 1.18, g);
     this.glow(0, 1.2, 1.6, 3.0, g, 0xffb35a, 0.5);
-    for (const s of [-1, 1]) { this.cyl(0.03, 0.03, 1.4, this.mat(0x1a1a1a), s * 1.75, 0.7, 1.9, g, 6); this.glow(s * 1.75, 1.45, 1.9, 0.7, g, 0xffc878, 0.8); }
+    for (const s of [-1, 1]) { this.cyl(0.03, 0.03, 1.4, this.mat(0x1a1a1a), s * 2.7, 0.7, 1.7, g, 6); this.glow(s * 2.7, 1.45, 1.7, 0.7, g, 0xffc878, 0.8); }
     const tr = new Group(); tr.position.set(0.78, 1.05, 1.5);
     this.cyl(0.13, 0.15, 0.05, this.mat(0xc9a24f), 0, -0.22, 0, tr, 14);
     this.cyl(0.03, 0.04, 0.22, this.mat(0xd9b45a), 0, -0.08, 0, tr, 10);
@@ -532,89 +544,143 @@ export class GalaSystem extends createSystem({}) {
     });
   }
 
+  armchair(parent, x, z, ry, c0, c1) {
+    const a = new Group(); a.position.set(x, 0, z); a.rotation.y = ry; parent.add(a);
+    const fab = this.gmat(c0, c1);
+    this.box(0.8, 0.16, 0.76, fab, 0, 0.3, 0, a);
+    this.box(0.62, 0.15, 0.6, this.gmat(c0, c1), 0, 0.46, 0.05, a);
+    const back = this.box(0.8, 0.5, 0.15, fab, 0, 0.68, -0.34, a); back.rotation.x = -0.14;
+    for (const s of [-1, 1]) this.box(0.13, 0.32, 0.72, fab, s * 0.4, 0.5, 0, a);
+    for (const [lx, lz] of [[-0.32, -0.3], [0.32, -0.3], [-0.32, 0.3], [0.32, 0.3]]) this.cyl(0.02, 0.014, 0.22, this.mat(0xd9b05a), lx, 0.11, lz, a, 8);
+    return a;
+  }
+
+  sofa(parent, x, z, w, c0, c1) {
+    const a = new Group(); a.position.set(x, 0, z); parent.add(a);
+    const fab = this.gmat(c0, c1);
+    this.box(w, 0.2, 0.94, fab, 0, 0.3, 0, a);
+    const n = 3, cw = (w - 0.5) / n;
+    for (let k = 0; k < n; k++) {
+      const cx = -((n - 1) / 2) * (cw + 0.02) + k * (cw + 0.02);
+      this.box(cw, 0.17, 0.72, this.gmat(c0, c1), cx, 0.5, 0.06, a);
+      const bk = this.box(cw, 0.5, 0.17, this.gmat(c0, c1), cx, 0.78, -0.38, a); bk.rotation.x = -0.14;
+    }
+    for (const s of [-1, 1]) this.box(0.24, 0.52, 0.94, fab, s * (w / 2 - 0.12), 0.5, 0, a);
+    this.box(w, 0.025, 0.03, this.mat(0xd9b05a), 0, 0.2, 0.47, a);
+    for (const [lx, c] of [[-0.8, 0xe3b04a], [0.85, 0xe8a5b0]]) { const p = this.box(0.34, 0.3, 0.1, this.mat(c), lx, 0.78, -0.2, a); p.rotation.z = lx < 0 ? 0.25 : -0.25; p.rotation.x = -0.2; }
+    for (const lx of [-w / 2 + 0.1, w / 2 - 0.1]) for (const lz of [-0.4, 0.4]) this.cyl(0.02, 0.014, 0.2, this.mat(0xd9b05a), lx, 0.1, lz, a, 8);
+    return a;
+  }
+
+  cafeChair(parent, x, z, ry) {
+    const a = new Group(); a.position.set(x, 0, z); a.rotation.y = ry; parent.add(a);
+    const wood = this.mat(0x4a3526);
+    this.box(0.42, 0.04, 0.42, wood, 0, 0.46, 0, a);
+    this.box(0.42, 0.46, 0.04, wood, 0, 0.7, -0.2, a);
+    for (const [lx, lz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) this.cyl(0.015, 0.012, 0.46, this.mat(0x2a1f17), lx, 0.23, lz, a, 6);
+    return a;
+  }
+
   addProps(gr, g) {
     switch (gr.setting) {
       case 'bar': {
-        this.box(3.6, 1.06, 0.6, this.gmat('#2a2a33', '#15161b'), 0, 0.53, -0.95, g);
+        const wood = this.tmat(slatsTexture()); wood.map.repeat.set(3, 1);
+        this.box(3.6, 1.06, 0.6, wood, 0, 0.53, -0.95, g);
         this.box(3.7, 0.06, 0.78, this.mat(0xe3ddd0), 0, 1.09, -0.95, g);
         this.plane(3.5, 0.06, this.addMat(0xffb35a, 0.9), 0, 0.08, -0.64, g, -Math.PI / 2);
+        // The drinks: a row of glasses, bottles, a shaker and a bowl of lemons.
+        const glass = this.mat(0xe8f2f0, { transparent: true, opacity: 0.8 });
+        for (let k = 0; k < 6; k++) this.cyl(0.032, 0.026, 0.12, glass, -1.35 + k * 0.17, 1.18, -0.82, g, 10);
+        for (const [x, c] of [[0.7, 0x2c7a4a], [0.86, 0xb5651d], [1.02, 0x8a1f2e], [1.18, 0x2c7a4a]]) { this.cyl(0.04, 0.045, 0.26, this.mat(c), x, 1.25, -1.1, g, 10); this.cyl(0.017, 0.02, 0.1, this.mat(c), x, 1.43, -1.1, g, 8); }
+        this.cyl(0.045, 0.05, 0.2, this.mat(0xc9ced6), -0.35, 1.2, -1.05, g, 10);
+        this.cyl(0.14, 0.1, 0.07, this.mat(0xf3eee2), 0.25, 1.15, -0.9, g, 14);
+        for (const [x, z] of [[0.2, -0.9], [0.3, -0.88], [0.25, -0.82]]) { const l = new Mesh(new SphereGeometry(0.035, 8, 6), this.mat(0xffd23a)); l.position.set(x, 1.2, z); g.add(l); }
         this.box(3.6, 2.2, 0.3, this.mat(0x14161b), 0, 1.1, -2.2, g);
         this.plane(3.3, 1.65, this.tmat(shelfTexture()), 0, 1.35, -2.04, g);
         this.glow(0, 1.4, -1.9, 3.6, g, 0xffb35a, 0.4);
-        for (const x of [-1.1, 0, 1.1]) { this.cyl(0.008, 0.008, 0.8, this.mat(0x222222), x, 2.0, -0.95, g, 4); this.glow(x, 1.6, -0.95, 0.8, g, 0xffd9a0, 0.9); }
-        for (const x of [-2.0, 2.0]) { this.cyl(0.03, 0.03, 0.75, this.mat(0xc9a24f), x, 0.4, 0.0, g, 8); this.cyl(0.2, 0.2, 0.06, this.mat(0x7a1f2e), x, 0.78, 0.0, g, 14); }
+        // A little pergola with three hanging lamps.
+        for (const s of [-1, 1]) this.cyl(0.03, 0.03, 2.6, this.mat(0x1a1a1a), s * 1.9, 1.3, -0.95, g, 6);
+        this.box(3.9, 0.07, 0.1, this.mat(0x1a1a1a), 0, 2.6, -0.95, g);
+        for (const x of [-1.0, 0, 1.0]) {
+          this.cyl(0.006, 0.006, 0.55, this.mat(0x222222), x, 2.32, -0.95, g, 4);
+          this.cyl(0.04, 0.17, 0.2, this.mat(0xd9b05a), x, 1.95, -0.95, g, 14);
+          this.glow(x, 1.85, -0.95, 0.9, g, 0xffd9a0, 0.85);
+        }
+        for (const x of [-2.1, 2.1]) { this.cyl(0.03, 0.03, 0.75, this.mat(0xc9a24f), x, 0.4, -0.2, g, 8); this.cyl(0.2, 0.2, 0.06, this.mat(0x7a1f2e), x, 0.78, -0.2, g, 14); }
         break;
       }
       case 'lounge': {
         this.plane(3.8, 2.8, this.tmat(rugTexture()), 0, 0.02, 0, g, -Math.PI / 2);
-        this.box(3.0, 0.42, 0.9, this.gmat('#2d4a5e', '#1a2b38'), 0, 0.21, -1.15, g);
-        this.box(3.0, 0.62, 0.24, this.gmat('#2d4a5e', '#1a2b38'), 0, 0.72, -1.55, g);
-        for (const s of [-1, 1]) this.box(0.24, 0.66, 0.95, this.gmat('#2d4a5e', '#1a2b38'), s * 1.62, 0.33, -1.15, g);
-        this.box(3.0, 0.03, 0.04, this.mat(0xd9b05a), 0, 1.04, -1.56, g);
-        this.cyl(0.52, 0.52, 0.36, this.mat(0x1d1d22), 0, 0.2, -0.2, g, 22);
-        this.cyl(0.55, 0.55, 0.03, this.mat(0xc9a24f), 0, 0.4, -0.2, g, 22);
-        this.glow(0, 0.55, -0.2, 0.8, g, 0xffc878, 0.8);
-        for (const s of [-1, 1]) { this.box(0.7, 0.42, 0.7, this.gmat('#7a3d4a', '#43202a'), s * 2.1, 0.21, -0.2, g); this.box(0.7, 0.5, 0.2, this.gmat('#7a3d4a', '#43202a'), s * 2.4, 0.6, -0.2, g); }
-        this.cyl(0.025, 0.025, 1.7, this.mat(0xc9a24f), -2.3, 0.85, -1.4, g, 8);
-        this.cyl(0.22, 0.12, 0.3, this.mat(0xfff0cf), -2.3, 1.75, -1.4, g, 14);
-        this.glow(-2.3, 1.75, -1.4, 1.5, g, 0xffd9a0, 0.7);
+        this.sofa(g, 0, -1.25, 3.0, '#3a8590', '#1b4650');
+        this.armchair(g, 2.05, -0.15, -Math.PI / 2, '#c27688', '#7a3a4a');
+        this.armchair(g, -2.05, -0.15, Math.PI / 2, '#c27688', '#7a3a4a');
+        this.cyl(0.5, 0.5, 0.34, this.mat(0x1d1d22), 0, 0.19, 0.55, g, 24);
+        this.cyl(0.54, 0.54, 0.03, this.mat(0xc9a24f), 0, 0.38, 0.55, g, 24);
+        this.cyl(0.03, 0.03, 0.12, this.mat(0xe8f0f2, { transparent: true, opacity: 0.85 }), 0.1, 0.45, 0.5, g, 8);
+        this.glow(0, 0.55, 0.55, 0.7, g, 0xffc878, 0.7);
+        this.cyl(0.025, 0.025, 1.7, this.mat(0xc9a24f), -2.4, 0.85, -1.5, g, 8);
+        this.cyl(0.22, 0.12, 0.3, this.mat(0xfff0cf), -2.4, 1.75, -1.5, g, 14);
+        this.glow(-2.4, 1.75, -1.5, 1.5, g, 0xffd9a0, 0.7);
         this.cyl(0.2, 0.15, 0.4, this.mat(0x2b2f36), 2.4, 0.2, -1.6, g, 12);
         for (const [dx, dy, r] of [[0, 0.7, 0.35], [0.2, 0.55, 0.25], [-0.2, 0.6, 0.26]]) { const s = new Mesh(new SphereGeometry(r, 8, 6), this.mat(0x1d5233)); s.position.set(2.4 + dx, 0.5 + dy, -1.6); g.add(s); }
         break;
       }
       case 'stage': {
-        this.box(8.4, 0.2, 2.8, this.gmat('#3a2a22', '#1e1511'), 0, 0.1, -0.35, g);
-        this.box(8.4, 0.03, 0.05, this.mat(0xd9b05a), 0, 0.21, 1.03, g);
-        this.plane(8.4, 0.08, this.addMat(0x6af0e4, 0.9), 0, 0.06, 1.06, g, -Math.PI / 2);
+        this.box(6.8, 0.2, 2.8, this.gmat('#3a2a22', '#1e1511'), 0, 0.1, -0.35, g);
+        this.box(6.8, 0.03, 0.05, this.mat(0xd9b05a), 0, 0.21, 1.03, g);
+        this.plane(6.8, 0.08, this.addMat(0x6af0e4, 0.9), 0, 0.06, 1.06, g, -Math.PI / 2);
         // The LED wall: it moves with the voices.
         const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256;
         const tex = new CanvasTexture(cv); tex.colorSpace = SRGBColorSpace;
         this.led = { ctx: cv.getContext('2d'), tex };
-        this.box(7.4, 4.3, 0.12, this.mat(0x0b0c10), 0, 2.55, -1.78, g);
-        this.plane(7.0, 3.9, new MeshBasicMaterial({ map: tex }), 0, 2.55, -1.7, g);
-        this.glow(0, 2.5, -1.2, 9, g, 0xc77dff, 0.18);
+        this.box(5.8, 3.3, 0.12, this.mat(0x0b0c10), 0, 2.2, -1.78, g);
+        this.plane(5.5, 3.0, new MeshBasicMaterial({ map: tex }), 0, 2.2, -1.7, g);
+        this.glow(0, 2.2, -1.2, 8, g, 0xc77dff, 0.16);
         // Truss, stage lamps and their beams.
-        this.box(8.2, 0.12, 0.12, this.mat(0x20232b), 0, 4.95, 0.3, g);
-        for (const s of [-1, 1]) this.box(0.1, 4.95, 0.1, this.mat(0x20232b), s * 4.1, 2.5, 0.3, g);
+        this.box(6.9, 0.12, 0.12, this.mat(0x20232b), 0, 4.95, 0.3, g);
+        for (const s of [-1, 1]) this.box(0.1, 4.95, 0.1, this.mat(0x20232b), s * 3.45, 2.5, 0.3, g);
         const cols = [0xff5fa8, 0xffd27a, 0x6af0e4, 0xffd27a, 0xff5fa8];
         for (let k = 0; k < 5; k++) {
-          const x = -3.2 + k * 1.6;
+          const x = -2.6 + k * 1.3;
           this.cyl(0.12, 0.16, 0.3, this.mat(0x111216), x, 4.8, 0.3, g, 10);
-          this.cone(x, 2.5, 0.3 + 0.2, 0.08, 0.7, 4.7, cols[k], 0.35, g);
+          this.cone(x, 2.5, 0.5, 0.08, 0.65, 4.7, cols[k], 0.32, g);
           this.glow(x, 4.65, 0.3, 0.6, g, cols[k], 0.9);
         }
-        for (const s of [-1, 1]) { this.box(0.7, 1.6, 0.6, this.mat(0x101114), s * 4.3, 0.8, -0.4, g); this.cyl(0.22, 0.22, 0.04, this.mat(0x2a2c33), s * 4.3, 1.0, -0.09, g, 16).rotation.x = Math.PI / 2; }
-        for (const x of [-1.2, 0, 1.2]) { this.cyl(0.012, 0.012, 0.95, this.mat(0x222222), x - 0.45, 0.7, 0.3, g, 5); this.box(0.34, 0.24, 0.02, this.mat(0xf4efe2), x - 0.45, 1.25, 0.3, g); }
+        for (const s of [-1, 1]) { this.box(0.7, 1.5, 0.6, this.mat(0x101114), s * 3.6, 0.75, -0.4, g); this.cyl(0.22, 0.22, 0.04, this.mat(0x2a2c33), s * 3.6, 0.95, -0.09, g, 16).rotation.x = Math.PI / 2; }
+        for (const x of [-0.95, 0, 0.95]) { this.cyl(0.012, 0.012, 0.95, this.mat(0x222222), x - 0.5, 0.7, 0.35, g, 5); this.box(0.34, 0.24, 0.02, this.mat(0xf4efe2), x - 0.5, 1.25, 0.35, g); }
         break;
       }
       case 'bistro': {
-        this.cyl(0.46, 0.46, 0.04, this.mat(0xf1ece0), 0, 0.77, -0.1, g, 24);
-        this.cyl(0.04, 0.04, 0.74, this.mat(0x222222), 0, 0.38, -0.1, g, 8);
-        this.cyl(0.26, 0.26, 0.03, this.mat(0x222222), 0, 0.02, -0.1, g, 16);
-        for (const a of [0.8, 2.6]) this.cyl(0.026, 0.018, 0.14, this.mat(0xe8f0f2, { transparent: true, opacity: 0.85 }), Math.cos(a) * 0.2, 0.86, -0.1 + Math.sin(a) * 0.2, g, 8);
-        this.cyl(0.02, 0.02, 0.09, this.mat(0xfff1cf), 0, 0.84, -0.1, g, 8);
-        this.glow(0, 0.98, -0.1, 0.8, g, 0xffc878, 0.85);
-        for (const s of [-1, 1]) { this.box(0.42, 0.05, 0.42, this.mat(0x4a3526), s * 0.0, 0.46, s * -1.0 - 0.1, g); this.box(0.42, 0.55, 0.05, this.mat(0x4a3526), 0, 0.75, s * -1.2 - 0.1, g); }
-        for (let k = 0; k < 12; k++) { const a = (k / 12) * TAU; const x = Math.cos(a) * 1.3, z = -0.1 + Math.sin(a) * 1.3; const b = new Mesh(this.bulbGeo, this.mat(0xffe2a8)); b.position.set(x, 2.4, z); g.add(b); if (k % 2 === 0) this.glow(x, 2.4, z, 0.4, g, 0xffc878, 0.7); }
-        this.cyl(0.015, 0.015, 2.4, this.mat(0x222222), 0, 1.2, -0.1, g, 5);
+        this.cyl(0.46, 0.46, 0.04, this.mat(0xf1ece0), 0, 0.77, -0.08, g, 24);
+        this.cyl(0.04, 0.04, 0.74, this.mat(0x222222), 0, 0.38, -0.08, g, 8);
+        this.cyl(0.26, 0.26, 0.03, this.mat(0x222222), 0, 0.02, -0.08, g, 16);
+        for (const a of [0.8, 2.6]) this.cyl(0.026, 0.018, 0.14, this.mat(0xe8f0f2, { transparent: true, opacity: 0.85 }), Math.cos(a) * 0.2, 0.86, -0.08 + Math.sin(a) * 0.2, g, 8);
+        this.cyl(0.02, 0.02, 0.09, this.mat(0xfff1cf), 0, 0.84, -0.08, g, 8);
+        this.glow(0, 0.98, -0.08, 0.8, g, 0xffc878, 0.85);
+        this.cafeChair(g, -0.5, -1.0, 0); this.cafeChair(g, 0.5, -1.0, 0);
+        for (let k = 0; k < 12; k += 2) { const a = (k / 12) * TAU; const x = Math.cos(a) * 1.4, z = -0.08 + Math.sin(a) * 1.4; const b = new Mesh(this.bulbGeo, this.mat(0xffe2a8)); b.position.set(x, 2.4, z); g.add(b); this.glow(x, 2.4, z, 0.4, g, 0xffc878, 0.7); }
         break;
       }
       case 'tall': {
-        this.cocktailTable(0, -0.35, 1.0, g);
-        for (const s of [-1, 1]) { this.cyl(0.03, 0.03, 2.1, this.mat(0x1a1a1a), s * 2.0, 1.05, -0.7, g, 6); this.glow(s * 2.0, 2.15, -0.7, 0.9, g, 0xffc878, 0.8); }
+        this.cocktailTable(0, -0.3, 1.0, g);
         break;
       }
       case 'door': {
-        this.box(5.2, 3.3, 0.22, this.gmat('#1c1f26', '#12141a'), 0, 1.65, -1.55, g);
-        this.box(1.7, 2.7, 0.3, this.mat(0x0c0d11), 0, 1.35, -1.5, g);
-        this.plane(1.45, 2.55, this.addMat(0x68e8a0, 0.55, this.softMap), 0, 1.3, -1.33, g);
-        this.plane(1.4, 2.5, this.mat(0xcfffe0), 0, 1.28, -1.36, g);
-        this.plane(2.3, 0.4, this.tmat(signTexture('GREEN ROOM', '#68e8a0'), { transparent: true }), 0, 2.95, -1.37, g);
-        this.glow(0, 1.3, -1.0, 3.2, g, 0x68e8a0, 0.35);
-        this.decal(0, -0.5, 3.4, 0x68e8a0, 0.35, g);
-        for (const s of [-1, 1]) { this.cyl(0.035, 0.05, 0.9, this.mat(0xd9b05a), s * 1.2, 0.45, -0.6, g, 10); }
-        this.box(2.4, 0.03, 0.03, this.mat(0x7d1126), 0, 0.8, -0.6, g);
-        for (const [x, z, w] of [[2.0, -1.0, 0.8], [2.2, -0.3, 0.6], [-2.0, -1.1, 0.9]]) { this.box(w, 0.6, 0.5, this.mat(0x121317), x, 0.3, z, g); this.box(w, 0.04, 0.5, this.mat(0x6b6f78), x, 0.62, z, g); }
+        // A small, calm doorway: a dark wall, a teal-green light panel and soft neon edges.
+        this.box(3.4, 3.0, 0.22, this.gmat('#252f31', '#141a1c'), 0, 1.5, -1.4, g);
+        this.box(1.5, 2.5, 0.1, this.mat(0x0c0d11), 0, 1.25, -1.27, g);
+        this.plane(1.25, 2.35, this.gmat('#1f7a55', '#0b3a29'), 0, 1.22, -1.21, g);
+        this.plane(1.4, 2.5, this.addMat(0x68e8a0, 0.14, this.softMap), 0, 1.25, -1.19, g);
+        for (const s of [-1, 1]) this.plane(0.05, 2.5, this.addMat(0x68e8a0, 0.55), s * 0.7, 1.25, -1.2, g);
+        this.plane(1.7, 0.3, this.tmat(signTexture('GREEN ROOM', '#68e8a0'), { transparent: true }), 0, 2.7, -1.27, g);
+        this.decal(0, -0.4, 2.8, 0x68e8a0, 0.16, g);
+        for (const s of [-1, 1]) this.cyl(0.035, 0.05, 0.9, this.mat(0xd9b05a), s * 0.85, 0.45, -0.6, g, 10);
+        this.box(1.7, 0.03, 0.03, this.mat(0x7d1126), 0, 0.8, -0.6, g);
+        for (const [x, z, w] of [[1.7, -1.0, 0.8], [1.95, -0.4, 0.55]]) {
+          this.box(w, 0.55, 0.45, this.mat(0x16181d), x, 0.28, z, g);
+          this.box(w + 0.02, 0.03, 0.47, this.mat(0x8a8f99), x, 0.56, z, g); this.box(w + 0.02, 0.03, 0.47, this.mat(0x8a8f99), x, 0.02, z, g);
+          this.box(0.04, 0.56, 0.47, this.mat(0xc9a24f), x - w * 0.3, 0.28, z, g);
+        }
         break;
       }
       default: break;
@@ -777,6 +843,18 @@ export class GalaSystem extends createSystem({}) {
     this.led.tex.needsUpdate = true;
   }
 
+  // A point part-way along a path, by distance walked (u runs 0 to 1).
+  pathAt(path, u) {
+    let total = 0; const seg = [];
+    for (let i = 1; i < path.length; i++) { const l = Math.hypot(path[i][0] - path[i - 1][0], path[i][1] - path[i - 1][1]); seg.push(l); total += l; }
+    let d = u * total;
+    for (let i = 0; i < seg.length; i++) {
+      if (d <= seg[i] || i === seg.length - 1) { const f = seg[i] ? Math.min(1, d / seg[i]) : 1; return [path[i][0] + (path[i + 1][0] - path[i][0]) * f, path[i][1] + (path[i + 1][1] - path[i][1]) * f]; }
+      d -= seg[i];
+    }
+    return path[0];
+  }
+
   // ---------- fireworks ----------
 
   launchFireworks() {
@@ -904,7 +982,15 @@ export class GalaSystem extends createSystem({}) {
       if (!cv) continue;
       this.animate(a.fig, t, lx, lz, cv.speaker === a.idx && cv.level > 0.02, cv.level);
     }
+    if (this.host && this.hostPath) {
+      // At the reveal Jules walks over to stand beside Tess, so you can see them both while he speaks.
+      this.hostT = Math.max(0, Math.min(1, this.hostT + dt * (solved ? 1 / 5.0 : -1 / 1.2)));
+      const hp = this.pathAt(this.hostPath, ease(this.hostT));
+      this.host.g.position.x = hp[0]; this.host.g.position.z = hp[1];
+      this.host.walk = this.hostT > 0.001 && this.hostT < 0.999;
+    }
     if (this.host) this.animate(this.host, t, lx, lz, st.helenLevel > 0.02, st.helenLevel);
+    if (this.finaleSpot) this.finaleSpot.visible = solved && this.open > 0.05;
 
     for (const f of this.finalists) {
       f.vis = solved ? Math.min(1, f.vis + dt * 0.8) : 0;

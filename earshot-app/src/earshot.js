@@ -1,6 +1,6 @@
 import {
   createSystem, Mesh, SphereGeometry, RingGeometry, PlaneGeometry, MeshBasicMaterial,
-  CanvasTexture, SRGBColorSpace, DoubleSide,
+  CanvasTexture, SRGBColorSpace, DoubleSide, AdditiveBlending,
 } from '@iwsdk/core';
 import { CASES } from './cases.js';
 
@@ -849,7 +849,7 @@ export class EarshotSystem extends createSystem({}) {
         c.panner.positionZ.value = c.z;
 
         if (!c.orb) {
-          c.orb = new Mesh(new SphereGeometry(1, 24, 16), new MeshBasicMaterial({ color: 0xff9f5b, transparent: true, opacity: 0.4, depthWrite: false }));
+          c.orb = new Mesh(new SphereGeometry(1, 24, 16), new MeshBasicMaterial({ color: cs.theme === 'gala' ? 0xffc47a : 0xff9f5b, transparent: true, opacity: 0.4, depthWrite: false, ...(cs.theme === 'gala' ? { blending: AdditiveBlending } : {}) }));
           c.orb.scale.setScalar(0.05);
           this.addToScene(c.orb);
           c.ring = new Mesh(new RingGeometry(0.9, 1, 48), new MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0, side: DoubleSide, depthWrite: false }));
@@ -955,8 +955,8 @@ export class EarshotSystem extends createSystem({}) {
         const prog = c.caught ? 1 : timed ? (c.ev.length ? c.ev.filter((e) => e.done).length / c.ev.length : 0) : c.dwell / NEED;
         const beat = this.phase === 'solved' ? 0.02 * Math.sin(nowMs / 150) : 0;
         c.orb.scale.setScalar(c.caught ? 0.11 + beat : 0.05 + 0.04 * focus + 0.04 * prog);
-        c.orb.material.opacity = c.caught ? 0.95 : 0.3 + 0.4 * focus + 0.25 * prog;
-        c.orb.material.color.setHex(c.caught ? 0xffd34d : 0xff9f5b);
+        c.orb.material.opacity = (c.caught ? 0.95 : 0.3 + 0.4 * focus + 0.25 * prog) * (cs.theme === 'gala' ? 0.65 : 1);
+        c.orb.material.color.setHex(c.caught ? 0xffd34d : cs.theme === 'gala' ? 0xffc47a : 0xff9f5b);
         if (c.pulse >= 0) {
           c.pulse += dt;
           const t = c.pulse / 1.2;
