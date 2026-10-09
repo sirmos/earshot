@@ -21,6 +21,8 @@ const EV_NEED = 0.5;       // timed case: fraction of an evidence line you must 
 const EV_GAZE = 0.6;       // timed case: listening rate with gaze only (no hands)
 const DOWN_Y = -0.5;       // looking about 30 degrees down at your notebook starts the accusation
 const ACCUSE_DWELL = 1.5;
+const HEAR_NEAR = 4.5;     // timed case: within this many metres you hear evidence at full strength
+const HEAR_FAR = 8.0;      // ...and beyond this you cannot catch it at all, so you have to walk over
 const STORE = 'earshot-progress';
 const BEST = 'earshot-best';
 
@@ -88,7 +90,8 @@ export class EarshotSystem extends createSystem({}) {
     this.last = 0;
     this.message = 'Click the page once to start the audio.';
     this.abuf = new Uint8Array(1024);
-    window.earshotState = { phase: 'loading', helenLevel: 0, revealed: false, celebrate: 0, convos: [] };
+    window.earshotState = { phase: 'loading', helenLevel: 0, revealed: false, celebrate: 0, moving: false, convos: [] };
+    window.earshotFx = (name) => { if (this.ctx && name === 'move') this.playWhoosh(); };
 
     this.hud = document.createElement('div');
     this.hud.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;padding:8px 14px;background:rgba(0,0,0,.75);color:#fff;font:14px monospace;border-radius:8px;pointer-events:none;white-space:pre;max-width:90vw';
@@ -154,6 +157,12 @@ export class EarshotSystem extends createSystem({}) {
 
   async loadCase(cs, first) {
     this.teardown();
+    // Remember where you started, and put you back there when a case restarts (you may have walked across the party).
+    const rig = this.player;
+    if (rig && rig.position && rig.rotation) {
+      if (!this.rigHome) this.rigHome = { x: rig.position.x, z: rig.position.z, y: rig.rotation.y };
+      else { rig.position.x = this.rigHome.x; rig.position.z = this.rigHome.z; rig.rotation.y = this.rigHome.y; }
+    }
     this.cs = cs;
     window.earshotCase = cs;
     window.earshotLayout = null; // the room builds only once this case has its own layout
@@ -338,6 +347,21 @@ export class EarshotSystem extends createSystem({}) {
     }
   }
 
+  // A soft sweep while the camera glides to a new spot.
+  playWhoosh() {
+    const ctx = this.ctx, t = ctx.currentTime, len = Math.floor(ctx.sampleRate * 2.2);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(); s.buffer = buf;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8;
+    bp.frequency.setValueAtTime(260, t); bp.frequency.exponentialRampToValueAtTime(1500, t + 1.0); bp.frequency.exponentialRampToValueAtTime(320, t + 2.1);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 0.7); g.gain.linearRampToValueAtTime(0.0001, t + 2.1);
+    s.connect(bp).connect(g).connect(ctx.destination);
+    s.start(t);
+  }
+
   startChatter() {
     // Re-place the room only if you have turned or moved noticeably since it was placed.
     const head = this.player.head;
@@ -362,7 +386,8 @@ export class EarshotSystem extends createSystem({}) {
     if (this.cs.mode === 'timed') {
       this.endAt = performance.now() + this.cs.time * 1000;
       this.notes = []; this.hudOn = true; this.downT = 0;
-      this.message = 'Listen in. Cup a hand toward a conversation.';
+      this.toast = { text: 'Point at a glowing marker and hold to walk over to a conversation.', t: performance.now(), hint: true };
+      this.message = 'Listen in. Walk to a conversation, then cup a hand toward it.';
     } else {
       this.message = 'Cup a hand toward a conversation to listen in.';
     }
@@ -462,7 +487,7 @@ export class EarshotSystem extends createSystem({}) {
       g.fillStyle = 'rgba(28,12,20,0.9)'; roundRect(g, 8, 100, 1008, 84, 22); g.fill();
       g.lineWidth = 4; g.strokeStyle = '#d9a24f'; g.stroke();
       g.textAlign = 'left'; g.fillStyle = '#ffd98a'; g.font = 'italic 24px Georgia, serif';
-      const lines = wrapLines(g, 'Noted: ' + toast.text, 960).slice(0, 2);
+      const lines = wrapLines(g, (toast.hint ? '' : 'Noted: ') + toast.text, 960).slice(0, 2);
       lines.forEach((ln, i) => g.fillText(ln, 30, 128 + i * 32));
     }
     H.tex.needsUpdate = true;
@@ -536,7 +561,7 @@ export class EarshotSystem extends createSystem({}) {
     this.playFanfare();
     this.playApplause(3.4);
     if (cs.theme === 'gala') this.playBangs();
-    this.showCards('CASE SOLVED', cs.finale.text, []);
+    this.showCards('CASE SOLVED', cs.finale.text, [], true);
     // The host gives the solution just after the fanfare, then you get a few seconds to enjoy the finale.
     this.revealTimer = setTimeout(() => {
       if (this.cs !== cs || this.phase !== 'solved') return;
@@ -897,13 +922,16 @@ export class EarshotSystem extends createSystem({}) {
 
       // Sound: clearer when you look and cup; far conversations get a boost; chatter ducks while a clue or the host plays.
       const focus = clamp01(0.5 * look + 0.8 * cup);
-      c.gain.gain.setTargetAtTime((hush ? QUIET : 0.15 + 0.85 * focus) * c.boost, now, 0.1);
+      // Far conversations are lifted a little so you can still tell something is going on over there.
+      const comp = Math.min(2, Math.max(0.8, Math.pow((1 + 0.5 * (len - 1)) / 1.6, 0.6)));
+      c.gain.gain.setTargetAtTime((hush ? QUIET : 0.15 + 0.85 * focus) * c.boost * comp, now, 0.1);
       c.filter.frequency.setTargetAtTime(hush ? 400 : 500 + 7500 * focus, now, 0.1);
 
       if (this.phase === 'play') {
         if (timed) {
           // Evidence is only caught if you are listening while that line is spoken.
-          const rate = cup >= CUP_ON ? 1 : i === lookIdx ? EV_GAZE : 0;
+          const near = clamp01((HEAR_FAR - len) / (HEAR_FAR - HEAR_NEAR));
+          const rate = (cup >= CUP_ON ? 1 : i === lookIdx ? EV_GAZE : 0) * near;
           if (rate > 0) {
             for (const e of c.ev) {
               if (e.done) continue;

@@ -3,7 +3,7 @@
 // theme        = 'parlor' | 'conservatory' | 'gala'
 // mode         = 'timed' (case 3): one long conversation per group with timed evidence, a countdown and a notebook.
 //                Otherwise: each group has a chatter loop plus a clue file you catch by cupping.
-// groups[i]    = timed: { setting, at:[x,z], members:[names], offsets:[[dx,dz],..], lift, boost, chatter, evidence:[{at,len,key,note}] }
+// groups[i]    = timed: { setting, at:[x,z], members:[names], lift, boost, chatter, evidence:[{at,len,key,note}] }
 //                classic: { pair:[a,b], chatter, clue, angle, startSpeaker, clueSpeaker }
 //   at         = position in the party's own coordinates (forward is -z, right is +x)
 //   evidence   = at/len are seconds into the chatter file; key marks the clues the answer depends on
@@ -92,42 +92,52 @@ export const CASES = [
     art: 'characters/case3/',
     images: both('kai', 'nia', 'dev', 'ximena', 'jonah', 'amara', 'elias', 'sooah', 'tobias', 'imani', 'gus', 'sienna', 'marcus', 'lola', 'idris', 'tess', 'remy', 'jules'),
     host: 'jules',
-    hostAt: [1.7, -0.7],
+    hostAt: [1.9, -2.4],
+    // Where you can walk to: 'at' is where your head goes, 'look' is what the camera turns toward, 'group' is the conversation there.
+    stops: [
+      { name: 'ENTRANCE', at: [0, 0], look: [0, -9] },
+      { name: 'GREEN ROOM', at: [-3.1, -0.9], look: [-5.2, -1.6], group: 5 },
+      { name: 'TALL TABLE', at: [2.6, -0.9], look: [4.6, -2.2], group: 4 },
+      { name: 'POOL BAR', at: [-4.5, -4.5], look: [-6.5, -6.0], group: 0 },
+      { name: 'LOUNGE', at: [4.6, -5.0], look: [6.5, -6.5], group: 1 },
+      { name: 'BISTRO', at: [-4.6, -9.3], look: [-6.4, -10.6], group: 3 },
+      { name: 'STAGE', at: [0.6, -11.6], look: [0.6, -13.6], group: 2 },
+    ],
     intro: 'audio/case3/intro.mp3',
     ask: 'audio/case3/ask.mp3',
     reveal: 'audio/case3/reveal.mp3',
     groups: [
-      { name: 'BAR', setting: 'bar', at: [-3.4, -1.9], members: ['kai', 'nia', 'dev'], offsets: [[-0.95, 0], [0.15, -0.6], [0.2, 0.6]],
+      { name: 'BAR', setting: 'bar', at: [-6.5, -6.0], boost: 1.2, members: ['kai', 'nia', 'dev'],
         chatter: 'audio/case3/g1.mp3',
         evidence: [
           { at: 52, len: 11, key: false, note: 'Dev was on a call by the deep end from 8:10 to 8:20. Kai saw him.' },
           { at: 82, len: 12, key: true, note: 'Kai: about 8:15 someone with a tablet carried a long flat case into the locked pool house.' },
         ] },
-      { name: 'LOUNGE', setting: 'lounge', at: [3.5, -2.3], members: ['ximena', 'jonah', 'amara'], offsets: [[0.55, -0.6], [0.5, 0.6], [-0.75, 0]],
+      { name: 'LOUNGE', setting: 'lounge', at: [6.5, -6.5], boost: 1.2, members: ['ximena', 'jonah', 'amara'],
         chatter: 'audio/case3/g2.mp3',
         evidence: [
           { at: 38, len: 10, key: false, note: 'Amara: the Academy chair hinted Sienna will win. Only a rumour.' },
           { at: 65.5, len: 9, key: true, note: "Jonah's stream: the trophy was still on its plinth at 8:12." },
         ] },
-      { name: 'TRIO', setting: 'stage', at: [0.5, -4.95], lift: 0.16, boost: 1.6, members: ['elias', 'sooah', 'tobias'], offsets: [[-0.8, 0], [0, 0.15], [0.8, 0]],
+      { name: 'TRIO', setting: 'stage', at: [0.6, -13.6], lift: 0.2, boost: 1.5, members: ['elias', 'sooah', 'tobias'],
         chatter: 'audio/case3/g3.mp3',
         evidence: [
           { at: 37.5, len: 10, key: false, note: 'The trio saw a waiter in a white jacket hovering by the plinth.' },
           { at: 71, len: 17, key: true, note: 'The trio: about 8:15 someone in black with a headset and a tablet put the trophy in a flight case and walked toward the pool house.' },
         ] },
-      { name: 'BISTRO', setting: 'bistro', at: [-2.4, -4.3], boost: 1.5, members: ['imani', 'gus'], offsets: [[-0.5, 0], [0.5, 0.05]],
+      { name: 'BISTRO', setting: 'bistro', at: [-6.4, -10.6], boost: 1.4, members: ['imani', 'gus'],
         chatter: 'audio/case3/g4.mp3',
         evidence: [
           { at: 50, len: 15, key: true, note: 'Dr. Imani: the Artist of the Year nameplate has a misspelling. A corrected plate arrives tonight. Keep it quiet.' },
           { at: 92, len: 15, key: true, note: 'Gus: Tess, the stage manager, borrowed a screwdriver and a polishing cloth at 8:10 for a nameplate.' },
         ] },
-      { name: 'TALL', setting: 'tall', at: [3.5, 0.9], members: ['sienna', 'marcus', 'lola', 'idris'], offsets: [[-0.6, -0.5], [0.6, -0.5], [-0.55, 0.6], [0.55, 0.6]],
+      { name: 'TALL', setting: 'tall', at: [4.6, -2.2], members: ['sienna', 'marcus', 'lola', 'idris'],
         chatter: 'audio/case3/g5.mp3',
         evidence: [
           { at: 50, len: 10, key: false, note: 'Idris was at this table all evening. Lola took a group photo with him at 8:15.' },
           { at: 83.5, len: 20, key: false, note: 'Lola saw Remy photographing the plinth. Marcus saw Remy on the press line at 8:14.' },
         ] },
-      { name: 'DOOR', setting: 'door', at: [-2.7, 1.8], members: ['tess', 'remy'], offsets: [[-0.45, 0], [0.5, 0]],
+      { name: 'DOOR', setting: 'door', at: [-5.2, -1.6], members: ['tess', 'remy'],
         chatter: 'audio/case3/g6.mp3',
         evidence: [
           { at: 23, len: 17, key: true, note: 'Tess, on her headset: the engraver should come round by the pool and use the glass cabin. Do not tell Jules.' },
@@ -141,7 +151,8 @@ export const CASES = [
     ],
     finale: {
       text: 'Tess took the Golden Waveform to the pool house so the engraver could fix a misspelled nameplate.',
-      appear: [{ name: 'tess', x: 3.7, z: -4.6 }],
+      appear: [{ name: 'tess', x: 8.0, z: -9.65 }],
+      stop: { at: [2.6, -8.2], look: [9.6, -10.4] },   // the camera walks here to watch the pool house open
       picture: null,
     },
   },
