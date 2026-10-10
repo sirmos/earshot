@@ -6,31 +6,10 @@
  */
 import { AssetType, defineAssets } from '@iwsdk/core';
 const publicAssetUrl = (filePath) => `${import.meta.env.BASE_URL}${filePath.replace(/^\/+/u, '')}`;
-const DEFAULT_STOCK_ASSET_BASE = 'https://cdn.jsdelivr.net/npm/@iwsdk/example-assets@0.4.2/assets';
-const configuredStockAssetBase = import.meta.env.VITE_IWSDK_EXAMPLE_ASSET_BASE_URL?.trim();
-const stockAssetBase = (configuredStockAssetBase || DEFAULT_STOCK_ASSET_BASE).replace(/\/+$/u, '');
-function stockAssetUrl(assetId, fileName) {
-    return `${stockAssetBase}/${assetId}/${fileName}`;
-}
+
+// Only assets that ship inside this project. The starter's environment desk, plant and robot
+// were downloaded from a CDN at startup, which could time out and stop the whole world loading.
 export default defineAssets({
-    'environment-desk': {
-        url: stockAssetUrl('environment-desk', 'environmentDesk.gltf'),
-        type: AssetType.GLTF,
-        name: 'Environment Desk',
-        priority: 'lazy',
-    },
-    'plant-sansevieria': {
-        url: stockAssetUrl('plant-sansevieria', 'plantSansevieria.gltf'),
-        type: AssetType.GLTF,
-        name: 'Plant Sansevieria',
-        priority: 'lazy',
-    },
-    robot: {
-        url: stockAssetUrl('robot', 'robot.gltf'),
-        type: AssetType.GLTF,
-        name: 'Robot',
-        priority: 'lazy',
-    },
     'welcome-panel': {
         url: publicAssetUrl('ui/welcome.uikitml'),
         type: AssetType.UIKitML,

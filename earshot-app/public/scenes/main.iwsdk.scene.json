@@ -18,59 +18,6 @@
   "resources": {},
   "nodes": [
     {
-      "id": "environment",
-      "name": "Environment",
-      "content": {
-        "type": "asset",
-        "asset": "environment-desk"
-      },
-      "transform": {
-        "position": [0, -0.106921583, 0],
-        "rotationDeg": [0, 180, 0]
-      },
-      "components": {
-        "LocomotionEnvironment": {}
-      }
-    },
-    {
-      "id": "plant-sansevieria",
-      "name": "Plant Sansevieria",
-      "content": {
-        "type": "asset",
-        "asset": "plant-sansevieria"
-      },
-      "transform": {
-        "position": [1.2, 0.85, -1.8]
-      },
-      "components": {
-        "RayInteractable": {},
-        "DistanceGrabbable": {
-          "movementMode": "MoveFromTarget"
-        }
-      }
-    },
-    {
-      "id": "robot",
-      "name": "Robot",
-      "content": {
-        "type": "asset",
-        "asset": "robot"
-      },
-      "transform": {
-        "position": [-1.2, 0.95, -1.8],
-        "scale": 0.5
-      },
-      "components": {
-        "AudioSource": {
-          "src": "./audio/chime.mp3",
-          "maxInstances": 3,
-          "playbackMode": "fade-restart"
-        },
-        "RayInteractable": {},
-        "Robot": {}
-      }
-    },
-    {
       "id": "welcome-panel",
       "name": "Welcome Panel",
       "content": {

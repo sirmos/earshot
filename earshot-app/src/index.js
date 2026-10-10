@@ -1,7 +1,6 @@
 import { World } from '@iwsdk/core';
 import projectOptions from 'virtual:iwsdk-project';
 import { PanelSystem } from './panel.js';
-import { RobotSystem } from './robot.js';
 import { EarshotSystem } from './earshot.js';
 import { RoomSystem } from './room.js';
 import { GalaSystem } from './gala.js';
@@ -34,7 +33,6 @@ if (new URLSearchParams(location.search).has('debug')) {
 World.create(document.getElementById('scene-container'), projectOptions)
   .then((world) => {
     const systems = [
-      ['Robot', RobotSystem],
       ['Panel', PanelSystem],
       ['Earshot', EarshotSystem],
       ['Room', RoomSystem],
