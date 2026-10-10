@@ -618,9 +618,8 @@ export class GalaSystem extends createSystem({}) {
         this.cyl(0.54, 0.54, 0.03, this.mat(0xc9a24f), 0, 0.38, 0.55, g, 24);
         this.cyl(0.03, 0.03, 0.12, this.mat(0xe8f0f2, { transparent: true, opacity: 0.85 }), 0.1, 0.45, 0.5, g, 8);
         this.glow(0, 0.55, 0.55, 0.7, g, 0xffc878, 0.7);
-        this.cyl(0.025, 0.025, 1.7, this.mat(0xc9a24f), -2.4, 0.85, -1.5, g, 8);
-        this.cyl(0.22, 0.12, 0.3, this.mat(0xfff0cf), -2.4, 1.75, -1.5, g, 14);
-        this.glow(-2.4, 1.75, -1.5, 1.5, g, 0xffd9a0, 0.7);
+        // (The floor lamp was removed: the host walks through here at the finale. The warm light now comes from the table.)
+        this.glow(0, 0.9, -0.4, 2.6, g, 0xffd9a0, 0.35);
         this.cyl(0.2, 0.15, 0.4, this.mat(0x2b2f36), 2.4, 0.2, -1.6, g, 12);
         for (const [dx, dy, r] of [[0, 0.7, 0.35], [0.2, 0.55, 0.25], [-0.2, 0.6, 0.26]]) { const s = new Mesh(new SphereGeometry(r, 8, 6), this.mat(0x1d5233)); s.position.set(2.4 + dx, 0.5 + dy, -1.6); g.add(s); }
         break;

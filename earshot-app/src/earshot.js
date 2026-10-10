@@ -24,7 +24,10 @@ const DOWN_Y = -0.5;       // looking about 30 degrees down at your notebook sta
 const ACCUSE_DWELL = 1.5;
 const HEAR_NEAR = 4.5;     // timed case: within this many metres you hear evidence at full strength
 const HEAR_FAR = 8.0;      // ...and beyond this you cannot catch it at all, so you have to walk over
+const MAX_WRONG = 2;       // wrong picks allowed per attempt; then the case "goes cold" and you must listen again
+const UNLOCK_ALL = new URLSearchParams(location.search).has('unlock'); // for demos and testing
 const STORE = 'earshot-progress';
+const STREAK = 'earshot-streak';
 const BEST = 'earshot-best';
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -34,6 +37,22 @@ const fmtTime = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).pad
 function readSolved() { try { return JSON.parse(localStorage.getItem(STORE) || '[]'); } catch (e) { return []; } }
 function saveSolved(id) {
   try { const s = readSolved(); if (!s.includes(id)) { s.push(id); localStorage.setItem(STORE, JSON.stringify(s)); } } catch (e) { /* progress won't persist */ }
+}
+function today() { return new Date().toISOString().slice(0, 10); }
+function readStreak() { try { return JSON.parse(localStorage.getItem(STREAK) || '{}'); } catch (e) { return {}; } }
+function bumpStreak() {
+  try {
+    const s = readStreak(), t = today();
+    if (s.last === t) return s.count || 1;
+    const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    const count = s.last === y ? (s.count || 0) + 1 : 1;
+    localStorage.setItem(STREAK, JSON.stringify({ last: t, count }));
+    return count;
+  } catch (e) { return 1; }
+}
+function streakNow() {
+  const s = readStreak(), y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  return s.last === today() || s.last === y ? s.count || 0 : 0;
 }
 function readBest() { try { return JSON.parse(localStorage.getItem(BEST) || '{}'); } catch (e) { return {}; } }
 function saveBest(id, score) {
@@ -546,8 +565,21 @@ export class EarshotSystem extends createSystem({}) {
       it.wrong = true;
       drawCard(it, 0);
       it.tex.needsUpdate = true;
-      this.cards.title.set('Not quite. Try again', this.curQ.question);
+      if (this.wrongCount >= MAX_WRONG) { this.goCold(); return; }
+      const left = MAX_WRONG - this.wrongCount;
+      this.cards.title.set('Not quite. ' + left + ' guess' + (left > 1 ? 'es' : '') + ' left', this.curQ.question);
     }
+  }
+
+  // Too many wrong guesses: the trail goes cold. Listen again to find the evidence you missed.
+  goCold() {
+    const cs = this.cs;
+    this.phase = 'cold';
+    this.message = 'The trail went cold.';
+    this.showCards('THE TRAIL WENT COLD', 'Guessing will not crack it. Listen again and catch the evidence.', [
+      { label: 'Listen again', sub: 'Replay this case', onPick: () => { this.clearCards(); this.loadCase(cs, false); } },
+      { label: 'Case file', sub: 'Pick another case', onPick: () => { this.stopChatter(); this.phase = 'menu'; this.showMenu('Case file', 'Choose what to play.'); } },
+    ]);
   }
 
   solve() {
@@ -557,6 +589,7 @@ export class EarshotSystem extends createSystem({}) {
     window.earshotState.celebrate++;  // confetti in the rooms, fireworks at the gala
     for (const o of this.convos) o.pulse = 0;
     saveSolved(cs.id);
+    this.streak = bumpStreak();
     if (cs.mode === 'timed') this.report = this.buildReport();
     this.message = 'SOLVED: ' + cs.finale.text;
     this.playFanfare();
@@ -584,12 +617,17 @@ export class EarshotSystem extends createSystem({}) {
   showMenu(title, sub, follow) {
     const solved = readSolved();
     const best = readBest();
-    const opts = CASES.map((c, i) => ({
-      label: (i + 1) + '. ' + c.title,
-      sub: solved.includes(c.id) ? (best[c.id] ? 'Solved. Best ' + best[c.id] : 'Solved. Play again') : 'New case',
-      onPick: () => { this.clearCards(); this.loadCase(c, false); },
-    }));
-    this.showCards(title, sub, opts, follow);
+    const opts = CASES.map((c, i) => {
+      const locked = !UNLOCK_ALL && i > 0 && !solved.includes(CASES[i - 1].id);
+      return {
+        label: (i + 1) + '. ' + c.title,
+        locked,
+        sub: locked ? 'Solve case ' + i + ' to unlock' : solved.includes(c.id) ? (best[c.id] ? 'Solved. Best ' + best[c.id] : 'Solved. Play again') : 'New case',
+        onPick: () => { this.clearCards(); this.loadCase(c, false); },
+      };
+    });
+    const sk = streakNow();
+    this.showCards(title, (sk ? sk + '-day streak. ' : '') + sub, opts, follow);
   }
 
   // ---------- in-world cards (readable and choosable inside the headset) ----------
