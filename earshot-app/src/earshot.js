@@ -911,7 +911,8 @@ export class EarshotSystem extends createSystem({}) {
     const now = this.ctx.currentTime;
     const clueActive = nowMs < this.clueUntil;
     const hush = clueActive || this.phase !== 'play';
-    const lines = ['Case ' + cs.id + (timed ? '  Notes: ' + this.notes.length + '/' + this.totalEv : '  Clues: ' + this.caughtCount + '/' + this.convos.length)];
+    const hd0 = hands.map((h) => Math.hypot(h.p[0] - px, h.p[1] - py, h.p[2] - pz).toFixed(2)).join('/');
+    const lines = ['Case ' + cs.id + '  hands ' + (hands.length ? hd0 + ' m from head' : 'NOT FOUND') + (timed ? '' : '') + (timed ? '  Notes: ' + this.notes.length + '/' + this.totalEv : '  Clues: ' + this.caughtCount + '/' + this.convos.length)];
 
     // Which conversation are you facing most directly? (the no-hands gaze assist)
     let lookIdx = -1;
@@ -955,7 +956,7 @@ export class EarshotSystem extends createSystem({}) {
         const p = h.p;
         const hx = p[0] - px, hy = p[1] - py, hz = p[2] - pz;
         const hd = Math.hypot(hx, hy, hz) || 1;
-        const nearness = clamp01((0.35 - hd) / 0.15);
+        const nearness = clamp01((0.5 - hd) / 0.2);
         const align = clamp01((hx * dx + hy * dy + hz * dz) / (hd * len) / 0.6);
         cup = Math.max(cup, nearness * align);
       }
@@ -1039,6 +1040,5 @@ export class EarshotSystem extends createSystem({}) {
     lines.push('');
     lines.push(this.message);
     this.hud.textContent = lines.join('\n');
-    if (TEST) this.drawTestHud(lines);
   }
 }
