@@ -5,7 +5,8 @@ import {
 import { CASES } from './cases.js';
 
 const TEST = new URLSearchParams(location.search).has('test');
-const DEBUG = import.meta.env.DEV || new URLSearchParams(location.search).has('debug');
+// ?test shows the big readout too (without the red error box that ?debug adds).
+const DEBUG = import.meta.env.DEV || TEST || new URLSearchParams(location.search).has('debug');
 const HAND_SPACE = 'gripSpaces'; // where your hands are (cupping); try 'indexTipSpaces' if not detected
 const RAY_SPACE = 'raySpaces';   // where your hands point (choosing answers)
 const DING_URL = 'audio/chime.mp3';
@@ -736,6 +737,7 @@ export class EarshotSystem extends createSystem({}) {
   }
 
   // Test mode (?test): draws the numbers in front of the player's view inside the headset.
+  // Bigger than before and placed above the notebook bar so nothing covers it.
   drawTestHud(lines) {
     if (!this.testPlane) {
       const cv = document.createElement('canvas');
@@ -743,9 +745,9 @@ export class EarshotSystem extends createSystem({}) {
       this.testCtx = cv.getContext('2d');
       this.testTex = new CanvasTexture(cv);
       this.testTex.colorSpace = SRGBColorSpace;
-      this.testPlane = new Mesh(new PlaneGeometry(0.72, 0.32), new MeshBasicMaterial({ map: this.testTex, transparent: true, depthTest: false }));
+      this.testPlane = new Mesh(new PlaneGeometry(1.08, 0.48), new MeshBasicMaterial({ map: this.testTex, transparent: true, depthTest: false }));
       this.testPlane.renderOrder = 20;
-      this.testPlane.position.set(0, -0.32, -0.9);
+      this.testPlane.position.set(0, 0.45, -1.0);
       this.player.head.add(this.testPlane);
     }
     const t = performance.now();
