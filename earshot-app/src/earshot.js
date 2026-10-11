@@ -167,6 +167,10 @@ export class EarshotSystem extends createSystem({}) {
       this.message = 'Audio failed to load: ' + e.message;
       return;
     }
+    // ?reset clears saved progress, best scores and the streak, so you can test the locks as a brand-new player.
+    if (new URLSearchParams(location.search).has('reset')) {
+      try { [STORE, STREAK, BEST].forEach((k) => localStorage.removeItem(k)); } catch (e) { /* storage blocked */ }
+    }
     // ?case=3 jumps straight to a case. Returning players see the case file first.
     const want = new URLSearchParams(location.search).get('case');
     const forced = want ? CASES.find((c) => String(c.id) === want) : null;
