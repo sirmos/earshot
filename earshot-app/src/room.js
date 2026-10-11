@@ -375,6 +375,7 @@ export class RoomSystem extends createSystem({}) {
     this.pianoLid = null;
     this.glows = [];
     this.confetti = null;
+    this.figs = []; this.queue = []; this.active = 0; this.listFor = null; this.list = []; this.builtCase = null; this.builtAt = 0; this.panelCase = null;
     this.lastCelebrate = 0;
 
     // Character pictures are loaded per case (see cases.js), the first time a case needs them.
@@ -426,7 +427,68 @@ export class RoomSystem extends createSystem({}) {
   }
 
   // The pictures a case needs: [name, url]. "shared" pictures (Helen) always come from characters/.
+  // The pictures a case needs, in the order they should load: Helen first, then each pair, then the people from the
+  // finale, then everything else (talking pictures last). "shared" pictures (Helen) always come from characters/.
   imageList(cs) {
+    const urls = new Map();
+    for (const k of cs.images) urls.set(k, (cs.art || 'characters/') + k + '.png');
+    for (const k of cs.shared || []) urls.set(k, 'characters/' + k + '.png');
+    const first = ['helen'];
+    for (const g of cs.groups) for (const m of (g.pair || g.members || [])) first.push(m);
+    for (const a of (cs.finale && cs.finale.appear) || []) first.push(a.name);
+    const keys = new Set([...first.filter((k) => urls.has(k)), ...urls.keys()]);
+    return [...keys].map((k) => [k, urls.get(k)]);
+  }
+
+  // Pictures download a few at a time, in the order of imageList(), so the people who matter first appear first.
+  queueImages(list) {
+    const want = new Set(list.map(([k]) => k));
+    this.queue = this.queue.filter(([k]) => { if (want.has(k)) return true; this.loading.delete(k); return false; });
+    for (const [k, url] of list) {
+      if (this.tex[k] || this.loading.has(k) || this.failed.has(k)) continue;
+      this.loading.add(k);
+      this.queue.push([k, url]);
+    }
+    this.pump();
+  }
+
+  pump() {
+    while (this.active < 8 && this.queue.length) {
+      const [k, url] = this.queue.shift();
+      this.active++;
+      this.loader.load(
+        url,
+        (t) => { t.colorSpace = SRGBColorSpace; this.tex[k] = t; this.active--; this.pump(); },
+        undefined,
+        () => { this.failed.add(k); this.active--; console.warn('Earshot: could not load ' + url); this.pump(); }
+      );
+    }
+  }
+
+  // The ending picture is added as soon as it has downloaded (it may arrive after the room is built).
+  tryPanel() {
+    const cs = this.panelCase;
+    if (!cs || this.panel || !this.furn || !cs.finale || !cs.finale.picture) return;
+    const pt = this.tex[cs.finale.picture];
+    if (!pt) return;
+    const pw = 1.5, ph = pw / this.aspect(pt);
+    const grp = new Group();
+    const frame = new Mesh(new PlaneGeometry(pw + 0.1, ph + 0.1), mat(0x2b1a10, { side: DoubleSide }));
+    const pic = new Mesh(
+      new PlaneGeometry(pw, ph),
+      new MeshBasicMaterial({ map: pt, transparent: true, opacity: 0, side: DoubleSide })
+    );
+    pic.position.z = 0.01;
+    grp.add(frame, pic);
+    const y = Math.min(2.2 + ph / 2, 2.95 - ph / 2);
+    grp.position.set(DOOR_X, y, -3.42);
+    grp.visible = false;
+    this.furn.add(grp);
+    this.panel = { grp, pic, vis: 0 };
+  }
+
+  // (The old version, which waited for every picture. Not used any more.)
+  imageListOld(cs) {
     const out = [];
     for (const k of cs.images) out.push([k, (cs.art || 'characters/') + k + '.png']);
     for (const k of cs.shared || []) out.push([k, 'characters/' + k + '.png']);
@@ -552,6 +614,58 @@ export class RoomSystem extends createSystem({}) {
   }
 
   makeFigure(name, x, z, h) {
+    const geom = new PlaneGeometry(1, 1);
+    geom.translate(0, 0.5, 0); // feet at the origin
+    // The person exists straight away; their picture is put on (and faded in) when it has downloaded.
+    const material = new MeshBasicMaterial({ map: null, color: 0xf0e2d0, transparent: true, alphaTest: 0.02, side: DoubleSide, opacity: 0 });
+    const mesh = new Mesh(geom, material);
+    mesh.renderOrder = 2;
+    mesh.visible = false;
+    const shadow = new Mesh(new PlaneGeometry(1, 1), this.shadowMat);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = 0.012;
+    shadow.renderOrder = 1;
+    shadow.visible = false;
+    const g = new Group();
+    g.add(shadow, mesh);
+    g.position.set(x, this.floorY, z);
+    this.addToScene(g);
+    this.built.push(g);
+    const f = { name, g, mesh, shadow, material, closed: null, talk: null, h, phase: Math.random() * 6.28, vis: 1, load: 0, ready: false };
+    this.figs.push(f);
+    this.fillFigure(f);
+    return f;
+  }
+
+  fillFigure(f) {
+    const closed = this.tex[f.name];
+    if (!closed) return false;
+    f.closed = closed;
+    f.talk = this.tex[f.name + '-talk'] || closed;
+    f.material.map = closed;
+    f.material.needsUpdate = true;
+    const a = this.aspect(closed);
+    f.mesh.scale.set(f.h * a, f.h, 1); // size stays fixed while talking, so figures never pop
+    f.shadow.scale.set(Math.max(0.6, f.h * a * 1.3), 0.45, 1);
+    f.mesh.visible = true;
+    f.shadow.visible = true;
+    f.ready = true;
+    f.load = 0;
+    return true;
+  }
+
+  // Each frame: put pictures on the people whose pictures have just arrived, and fade them in.
+  stepFigures(dt) {
+    for (const f of this.figs) {
+      if (!f.ready) { if (!this.fillFigure(f)) continue; }
+      else if (f.talk === f.closed) { const tk = this.tex[f.name + '-talk']; if (tk) f.talk = tk; }
+      if (f.load < 1) f.load = Math.min(1, f.load + dt * 2.2);
+      f.material.opacity = f.load * f.vis;
+    }
+  }
+
+  // (The old version, which needed every picture before it could build anything. Not used any more.)
+  makeFigureOld(name, x, z, h) {
     const closed = this.tex[name];
     if (!closed) return null;
     const talk = this.tex[name + '-talk'] || closed;
@@ -576,6 +690,7 @@ export class RoomSystem extends createSystem({}) {
   }
 
   clearBuilt() {
+    this.figs = []; this.panelCase = null; this.builtCase = null;
     for (const g of this.built) if (g.parent) g.parent.remove(g);
     this.built = [];
     this.guests = [];
@@ -680,7 +795,8 @@ export class RoomSystem extends createSystem({}) {
     }
 
     // The ending illustration, shown above the door once the mystery is solved.
-    const pt = this.tex[cs.finale.picture];
+    this.panelCase = cs;
+    const pt = null; // the ending picture is added by tryPanel() as soon as it has loaded
     if (pt) {
       const pw = 1.5, ph = pw / this.aspect(pt);
       const grp = new Group();
@@ -697,7 +813,7 @@ export class RoomSystem extends createSystem({}) {
       this.furn.add(grp);
       this.panel = { grp, pic, vis: 0 };
     }
-    window.earshotBuilt = cs.id; // tells the game this case's room is ready
+    this.builtCase = cs; this.builtAt = performance.now();
   }
 
   addTable(tx, tz, gift, label) {
@@ -1229,6 +1345,7 @@ export class RoomSystem extends createSystem({}) {
   }
 
   animate(f, t, hx, hz, speaking, level) {
+    if (!f.ready) return;
     const amp = Math.min(0.7, level * 8);
     // Face the player, turned a little toward the conversation partner so pairs look like they are talking.
     let dx = hx - f.g.position.x, dz = hz - f.g.position.z;
@@ -1286,10 +1403,12 @@ export class RoomSystem extends createSystem({}) {
     const gala = !!(cs && cs.theme === 'gala'); // the gala has its own scene (gala.js)
     this.party.visible = !gala;
     if (gala && this.layoutKey) { this.clearBuilt(); this.layoutKey = ''; }
+    // Start downloading this case's pictures straight away, in priority order.
+    if (cs && !gala && this.listFor !== cs) { this.listFor = cs; this.list = this.imageList(cs); this.queueImages(this.list); }
     if (cs && layout && !gala) {
-      const list = this.imageList(cs);
-      this.ensureImages(list);
-      const done = list.every(([k]) => this.tex[k] || this.failed.has(k));
+      const list = this.list;
+      // (pictures are loaded in priority order by queueImages, above)
+      const done = list.length > 0;
       if (done) {
         const key = cs.id + '|' + layout.map((p) => p.x.toFixed(2) + ',' + p.z.toFixed(2)).join('|') + '@' + this.floorY.toFixed(2);
         if (key !== this.layoutKey) {
@@ -1298,6 +1417,11 @@ export class RoomSystem extends createSystem({}) {
         }
       }
     }
+
+    // The room is ready for the game once Helen is on show (or after a few seconds, so a slow picture never holds things up).
+    if (this.builtCase && window.earshotBuilt !== this.builtCase.id && (!this.helen || this.helen.ready || now - this.builtAt > 6000)) window.earshotBuilt = this.builtCase.id;
+    this.stepFigures(dt);
+    this.tryPanel();
 
     // Warm glows always face the player (a flat glow looks like an oval from the side).
     for (const gl of this.glows) gl.lookAt(hx, m[13], hz);
@@ -1329,7 +1453,7 @@ export class RoomSystem extends createSystem({}) {
     for (const f of this.finalists) {
       f.vis = solved ? Math.min(1, f.vis + dt * 0.8) : 0;
       f.g.visible = f.vis > 0;
-      f.material.opacity = f.vis;
+      // (opacity is applied in stepFigures, together with the fade-in)
       if (f.g.visible) this.animate(f, t, hx, hz, false, 0);
     }
     if (this.locket) {

@@ -170,6 +170,7 @@ export class GalaSystem extends createSystem({}) {
     this.actors = []; this.glows = []; this.finalists = []; this.host = null; this.markers = []; this.motes = []; this.bobs = [];
     this.waterA = null; this.waterB = null; this.doorHinge = null; this.trophy = null; this.fire = null; this.led = null;
     this.open = 0; this.lastCelebrate = 0; this.wasRevealed = false;
+    this.figs = []; this.queue = []; this.active = 0; this.listFor = null; this.list = []; this.builtCase = null; this.builtAt = 0;
     this.glide = null; this.interior = null; this.finaleSpot = null; this.hostPath = null; this.hostT = 0; this.idc = 0; this.cool = 0; this.vig = null; this.avoid = []; this.cache = new Map(); this.ledT = 0; this.warnedRig = false;
 
     this.glowMap = glowTexture();
@@ -234,7 +235,43 @@ export class GalaSystem extends createSystem({}) {
 
   // ---------- pictures ----------
 
-  imageList(cs) { return cs.images.map((k) => [k, (cs.art || '') + k + '.png']); }
+  // The pictures a case needs, in the order they should load: everybody's standing picture first
+  // (the host, then each group, then the people from the finale), then the talking pictures.
+  imageList(cs) {
+    const first = [];
+    const add = (n) => { if (n && !first.includes(n)) first.push(n); };
+    add(cs.host);
+    for (const g of cs.groups) for (const m of (g.members || g.pair || [])) add(m);
+    for (const a of (cs.finale && cs.finale.appear) || []) add(a.name);
+    const keys = [...first, ...cs.images.filter((k) => !first.includes(k))];
+    return keys.map((k) => [k, (cs.art || '') + k + '.png']);
+  }
+
+  // Pictures download a few at a time, in the order of imageList(), so the people who matter first appear first.
+  queueImages(list) {
+    const want = new Set(list.map(([k]) => k));
+    this.queue = this.queue.filter(([k]) => { if (want.has(k)) return true; this.loading.delete(k); return false; });
+    for (const [k, url] of list) {
+      if (this.tex[k] || this.loading.has(k) || this.failed.has(k)) continue;
+      this.loading.add(k);
+      this.queue.push([k, url]);
+    }
+    this.pump();
+  }
+
+  pump() {
+    while (this.active < 8 && this.queue.length) {
+      const [k, url] = this.queue.shift();
+      this.active++;
+      this.loader.load(
+        url,
+        (t) => { t.colorSpace = SRGBColorSpace; this.tex[k] = t; this.active--; this.pump(); },
+        undefined,
+        () => { this.failed.add(k); this.active--; console.warn('Earshot: could not load ' + url); this.pump(); }
+      );
+    }
+  }
+
   ensureImages(list) {
     for (const [k, url] of list) {
       if (this.tex[k] || this.loading.has(k)) continue;
@@ -246,6 +283,57 @@ export class GalaSystem extends createSystem({}) {
   aspect(tex) { return tex && tex.image && tex.image.height ? tex.image.width / tex.image.height : 0.34; }
 
   makeFigure(name, x, z, h, lift, face, turn) {
+    const real = (window.earshotCase && window.earshotCase.heights && window.earshotCase.heights[name]) || 1.72;
+    h = h * real / 1.72;                                   // tall people look tall
+    const geom = new PlaneGeometry(1, 1);
+    geom.translate(0, 0.5, 0);
+    // The person exists straight away; their picture is put on (and faded in) when it has downloaded.
+    const material = new MeshBasicMaterial({ map: null, color: 0xd9ccbb, transparent: true, alphaTest: 0.02, side: DoubleSide, opacity: 0 });
+    const mesh = new Mesh(geom, material);
+    mesh.renderOrder = 2;
+    mesh.visible = false;
+    const shadow = new Mesh(new PlaneGeometry(1, 1), this.shadowMat);
+    shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.012; shadow.renderOrder = 1;
+    shadow.visible = false;
+    const g = new Group();
+    g.add(shadow, mesh);
+    g.position.set(x, lift || 0, z);
+    this.root.add(g);
+    const f = { name, g, mesh, shadow, material, closed: null, talk: null, h, lift: lift || 0, phase: Math.random() * 6.28, vis: 1, load: 0, ready: false, face: face || null, turn: turn === undefined ? 1.05 : turn, walk: false };
+    this.figs.push(f);
+    this.fillFigure(f);
+    return f;
+  }
+
+  fillFigure(f) {
+    const closed = this.tex[f.name];
+    if (!closed) return false;
+    f.closed = closed;
+    f.talk = this.tex[f.name + '-talk'] || closed;
+    f.material.map = closed;
+    f.material.needsUpdate = true;
+    const a = this.aspect(closed);
+    f.mesh.scale.set(f.h * a, f.h, 1);
+    f.shadow.scale.set(Math.max(0.7, f.h * a * 1.5), 0.5, 1);
+    f.mesh.visible = true;
+    f.shadow.visible = true;
+    f.ready = true;
+    f.load = 0;
+    return true;
+  }
+
+  // Each frame: put pictures on the people whose pictures have just arrived, and fade them in.
+  stepFigures(dt) {
+    for (const f of this.figs) {
+      if (!f.ready) { if (!this.fillFigure(f)) continue; }
+      else if (f.talk === f.closed) { const tk = this.tex[f.name + '-talk']; if (tk) f.talk = tk; }
+      if (f.load < 1) f.load = Math.min(1, f.load + dt * 2.2);
+      f.material.opacity = f.load * f.vis;
+    }
+  }
+
+  // (The old version, which needed every picture before it could build anything. Not used any more.)
+  makeFigureOld(name, x, z, h, lift, face, turn) {
     const closed = this.tex[name];
     if (!closed) return null;
     const real = (window.earshotCase && window.earshotCase.heights && window.earshotCase.heights[name]) || 1.72;
@@ -269,6 +357,7 @@ export class GalaSystem extends createSystem({}) {
 
   // Each guest turns toward the person they are talking with, but never so far that the flat picture goes edge-on to you.
   animate(f, t, lx, lz, speaking, level) {
+    if (!f.ready) return;
     const amp = Math.min(0.7, level * 8);
     const yv = Math.atan2(lx - f.g.position.x, lz - f.g.position.z);
     let yaw = yv;
@@ -290,6 +379,7 @@ export class GalaSystem extends createSystem({}) {
     this.actors = []; this.glows = []; this.finalists = []; this.host = null; this.markers = []; this.motes = []; this.bobs = [];
     this.waterA = null; this.waterB = null; this.doorHinge = null; this.trophy = null; this.fire = null; this.led = null;
     this.open = 0; this.avoid = []; this.glide = null; this.interior = null; this.finaleSpot = null; this.hostPath = null; this.hostT = 0;
+    this.figs = []; this.builtCase = null;
   }
 
   // ---------- the world ----------
@@ -336,7 +426,7 @@ export class GalaSystem extends createSystem({}) {
     }
     this.buildMarkers(cs);
     this.buildMotes();
-    window.earshotBuilt = cs.id;
+    this.builtCase = cs; this.builtAt = performance.now();
   }
 
   buildSky() {
@@ -926,17 +1016,24 @@ export class GalaSystem extends createSystem({}) {
     const fx = -m[8], fy = -m[9], fz = -m[10];
     const baseY = hy > 0.5 ? hy : 1.4;
 
+    // Start downloading this case's pictures straight away, in priority order.
+    if (this.listFor !== cs) { this.listFor = cs; this.list = this.imageList(cs); this.queueImages(this.list); }
     const layout = window.earshotLayout;
     if (layout) {
-      const list = this.imageList(cs);
-      this.ensureImages(list);
-      if (list.every(([k]) => this.tex[k] || this.failed.has(k))) {
+      const list = this.list;
+      // (pictures are loaded in priority order by queueImages, above)
+      if (list.length) {
         const key = cs.id + '|' + layout.map((p) => p.x.toFixed(2) + ',' + p.z.toFixed(2)).join('|');
         if (key !== this.key) { this.key = key; this.floorY = baseY - EYE; this.build(cs, layout); }
       }
     }
     if (!this.key) return;
     this.root.visible = true;
+    if (this.builtCase && window.earshotBuilt !== this.builtCase.id) {
+      // Tell the game the party is ready once the host is on show (or after a few seconds, so a slow picture never holds things up).
+      if (!this.host || this.host.ready || now - this.builtAt > 6000) window.earshotBuilt = this.builtCase.id;
+    }
+    this.stepFigures(dt);
 
     for (const gl of this.glows) gl.lookAt(hx, hy, hz);
     if (this.waterA) { this.waterA.offset.x = (t * 0.015) % 1; this.waterA.offset.y = (t * 0.01) % 1; }
@@ -993,7 +1090,7 @@ export class GalaSystem extends createSystem({}) {
 
     for (const f of this.finalists) {
       f.vis = solved ? Math.min(1, f.vis + dt * 0.8) : 0;
-      f.g.visible = f.vis > 0; f.material.opacity = f.vis;
+      f.g.visible = f.vis > 0;
       if (f.g.visible) this.animate(f, t, lx, lz, false, 0);
     }
     this.open = solved ? Math.min(1, this.open + dt * 0.5) : Math.max(0, this.open - dt * 2);
