@@ -18,11 +18,11 @@ const QUIET = 0.04;        // chatter volume while a clue / the host is speaking
 const CARD_DWELL = 1.2;    // seconds to hold a pointer on a card to choose it
 const POINT_COS = Math.cos((8 * Math.PI) / 180);
 const FINALE_HOLD = 4500;  // ms to enjoy the finale before the case file appears
-const EV_NEED = 0.5;       // timed case: fraction of an evidence line you must hear
-const EV_GAZE = 0.6;       // timed case: listening rate with gaze only (no hands)
+const EV_NEED = 0.4;       // timed case: fraction of an evidence line you must hear
+const EV_GAZE = 0.9;       // timed case: listening rate with gaze only (no hands)
 const DOWN_Y = -0.5;       // looking about 30 degrees down at your notebook starts the accusation
 const ACCUSE_DWELL = 1.5;
-const HEAR_NEAR = 4.5;     // timed case: within this many metres you hear evidence at full strength
+const HEAR_NEAR = 6.0;     // timed case: within this many metres you hear evidence at full strength
 const HEAR_FAR = 8.0;      // ...and beyond this you cannot catch it at all, so you have to walk over
 const MAX_WRONG = 2;       // wrong picks allowed per attempt; then the case "goes cold" and you must listen again
 const UNLOCK_ALL = new URLSearchParams(location.search).has('unlock'); // for demos and testing
@@ -186,6 +186,7 @@ export class EarshotSystem extends createSystem({}) {
     this.cs = cs;
     window.earshotCase = cs;
     window.earshotLayout = null; // the room builds only once this case has its own layout
+    if (DEBUG) this.checkPictures(cs);
     this.phase = 'loading';
     this.ready = false;
     this.message = 'Loading ' + cs.title + '...';
@@ -265,6 +266,30 @@ export class EarshotSystem extends createSystem({}) {
     this.message = 'The host is speaking... listen.';
     if (timed) this.showCards(cs.title.toUpperCase(), cs.tagline || '', []);
     this.playHost(this.introBuf, () => { if (this.cs === cs && this.phase === 'intro') this.startChatter(); });
+  }
+
+  // Debug only (?test or ?debug): fetches and decodes every picture of the case in the browser and reports the
+  // result in the readout, so a missing, blocked or broken picture shows up by name.
+  async checkPictures(cs) {
+    const urls = [];
+    for (const k of cs.images || []) urls.push((cs.art || 'characters/') + k + '.png');
+    for (const k of cs.shared || []) urls.push('characters/' + k + '.png');
+    const res = { ok: 0, total: urls.length, bad: [], ms: 0, done: false };
+    this.picCheck = res;
+    const t0 = performance.now();
+    await Promise.all(urls.map(async (url) => {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const bmp = await createImageBitmap(await r.blob());
+        if (bmp.close) bmp.close();
+        res.ok++;
+      } catch (e) {
+        res.bad.push(url.split('/').pop() + ' (' + (e && e.message ? e.message : e) + ')');
+      }
+    }));
+    res.ms = Math.round(performance.now() - t0);
+    res.done = true;
   }
 
   teardown() {
@@ -1037,6 +1062,10 @@ export class EarshotSystem extends createSystem({}) {
       this.updateHud(nowMs, left);
     }
 
+    if (this.picCheck) {
+      const p = this.picCheck;
+      lines.push('pictures ' + p.ok + '/' + p.total + ' ok' + (p.done ? ' in ' + p.ms + ' ms' : ' ...') + (p.bad.length ? '  FAILED: ' + p.bad.slice(0, 3).join(', ') : ''));
+    }
     lines.push('');
     lines.push(this.message);
     this.hud.textContent = lines.join('\n');
