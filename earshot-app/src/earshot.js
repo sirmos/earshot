@@ -656,7 +656,7 @@ export class EarshotSystem extends createSystem({}) {
       };
     });
     const sk = streakNow();
-    this.showCards(title, (sk ? sk + '-day streak. ' : '') + sub, opts, follow);
+    this.showCards(sk && title.length < 20 ? title + '  |  ' + sk + '-day streak' : title, sub, opts, follow);
   }
 
   // ---------- in-world cards (readable and choosable inside the headset) ----------
