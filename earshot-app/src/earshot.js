@@ -1062,6 +1062,8 @@ export class EarshotSystem extends createSystem({}) {
       this.updateHud(nowMs, left);
     }
 
+    const pp = window.earshotPics && window.earshotPics[cs.theme === 'gala' ? 'gala' : 'room'];
+    if (pp) lines.push('figures ' + pp.ready + '/' + pp.made + ' on show, pictures ' + pp.loaded + ' loaded, ' + pp.failed + ' failed, ' + pp.waiting + ' waiting');
     if (this.picCheck) {
       const p = this.picCheck;
       lines.push('pictures ' + p.ok + '/' + p.total + ' ok' + (p.done ? ' in ' + p.ms + ' ms' : ' ...') + (p.bad.length ? '  FAILED: ' + p.bad.slice(0, 3).join(', ') : ''));

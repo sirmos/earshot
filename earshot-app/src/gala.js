@@ -259,7 +259,30 @@ export class GalaSystem extends createSystem({}) {
     this.pump();
   }
 
+  // Pictures are downloaded and decoded off-screen (the same way the readout's "pictures" check does), a few at a time.
   pump() {
+    while (this.active < 8 && this.queue.length) {
+      const [k, url] = this.queue.shift();
+      this.active++;
+      this.fetchTexture(url).then(
+        (t) => { this.tex[k] = t; this.active--; this.pump(); },
+        (e) => { this.failed.add(k); this.active--; console.warn('Earshot: could not load ' + url + ' (' + (e && e.message ? e.message : e) + ')'); this.pump(); }
+      );
+    }
+  }
+
+  fetchTexture(url) {
+    const viaLoader = () => new Promise((res, rej) => this.loader.load(url, (t) => { t.colorSpace = SRGBColorSpace; res(t); }, undefined, rej));
+    if (typeof createImageBitmap !== 'function') return viaLoader();
+    return fetch(url)
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+      .then((b) => createImageBitmap(b, { imageOrientation: 'flipY', premultiplyAlpha: 'none' }))
+      .then((bmp) => { const t = new CanvasTexture(bmp); t.flipY = false; t.colorSpace = SRGBColorSpace; t.needsUpdate = true; return t; })
+      .catch(() => viaLoader());
+  }
+
+  // (The old version, which used the standard texture loader only. Not used any more.)
+  pumpOld() {
     while (this.active < 8 && this.queue.length) {
       const [k, url] = this.queue.shift();
       this.active++;
@@ -324,6 +347,8 @@ export class GalaSystem extends createSystem({}) {
 
   // Each frame: put pictures on the people whose pictures have just arrived, and fade them in.
   stepFigures(dt) {
+    const rec = (window.earshotPics = window.earshotPics || {});
+    rec.gala = { made: this.figs.length, ready: this.figs.filter((f) => f.ready).length, loaded: Object.keys(this.tex).length, failed: this.failed.size, waiting: this.queue.length };
     for (const f of this.figs) {
       if (!f.ready) { if (!this.fillFigure(f)) continue; }
       else if (f.talk === f.closed) { const tk = this.tex[f.name + '-talk']; if (tk) f.talk = tk; }
