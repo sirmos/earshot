@@ -1,6 +1,6 @@
 """Turns your voice files into text, on your own computer, so you don't have to type them.
 
-One-time setup (PowerShell):   pip install faster-whisper
+One-time setup (PowerShell):   pip install faster-whisper soundfile soxr
 Run from the earshot-app folder:  python transcribe-audio.py
 
 It listens to every .mp3 in public/audio and writes:
@@ -10,7 +10,20 @@ The first run downloads a speech model of about 450 MB. After that it works offl
 Check the text against your script: the model is good, not perfect, with names like Ximena or Soo-ah.
 """
 import json, os, sys
+import numpy as np
+import soundfile as sf
+import soxr
 from faster_whisper import WhisperModel
+
+
+def load16k(path):
+    # Reads the mp3 ourselves (soundfile) so faster-whisper's own decoder, which is broken with new PyAV, is not used.
+    y, sr = sf.read(path, dtype="float32", always_2d=True)
+    y = y.mean(axis=1)
+    if sr != 16000:
+        y = soxr.resample(y, sr, 16000)
+    return np.ascontiguousarray(y, dtype=np.float32)
+
 
 root = os.path.join("public", "audio")
 if not os.path.isdir(root):
@@ -24,7 +37,7 @@ for path in files:
     if os.path.basename(path).startswith("chime"):
         continue
     print("Listening to", key, "...", flush=True)
-    segs, _ = model.transcribe(path, beam_size=5, vad_filter=True)
+    segs, _ = model.transcribe(load16k(path), beam_size=5, vad_filter=True)
     segs = [{"start": round(s.start, 2), "end": round(s.end, 2), "text": s.text.strip()} for s in segs]
     data[key] = segs
     lines.append(key + "\n" + " ".join(s["text"] for s in segs) + "\n")
