@@ -3,12 +3,16 @@ import {
   CanvasTexture, SRGBColorSpace, DoubleSide, AdditiveBlending,
 } from '@iwsdk/core';
 import { CASES } from './cases.js';
+import { CAPTIONS } from './captions.js';
+import { TIMED } from './captions-timed.js';
 
 const TEST = new URLSearchParams(location.search).has('test');
 // ?test shows the big readout too (without the red error box that ?debug adds).
 const DEBUG = import.meta.env.DEV || TEST || new URLSearchParams(location.search).has('debug');
 const HAND_SPACE = 'gripSpaces'; // where your hands are (cupping); try 'indexTipSpaces' if not detected
 const RAY_SPACE = 'raySpaces';   // where your hands point (choosing answers)
+// Captions are on by default (the game is built on sound). Add ?nocaptions to the address to hide them.
+const CAPS_ON = !new URLSearchParams(location.search).has('nocaptions');
 const DING_URL = 'audio/chime.mp3';
 const NEED = 2.0;          // classic cases: seconds of focused listening to catch a clue
 const CUP_ON = 0.7;        // how "cupped" a hand must be to count as listening
@@ -107,6 +111,7 @@ export class EarshotSystem extends createSystem({}) {
     this.notes = []; this.totalEv = 0; this.totalKey = 0; this.endAt = 0; this.downT = 0;
     this.leftAtAccuse = 0; this.wrongCount = 0; this.report = '';
     this.toast = null; this.hud3 = null; this.hudOn = false; this.lastFy = 0; this.placeInfo = null;
+    this.cap = null; this.liveText = ''; this.liveUntil = 0;
     this.last = 0;
     this.message = 'Click the page once to start the audio.';
     this.abuf = new Uint8Array(1024);
@@ -269,7 +274,8 @@ export class EarshotSystem extends createSystem({}) {
     this.phase = 'intro';
     this.message = 'The host is speaking... listen.';
     if (timed) this.showCards(cs.title.toUpperCase(), cs.tagline || '', []);
-    this.playHost(this.introBuf, () => { if (this.cs === cs && this.phase === 'intro') this.startChatter(); });
+    else if (cs.id === 1 && !readSolved().length) this.showCards('WELCOME TO EARSHOT', 'Solve each case to unlock the next one.', []);
+    this.playHost(this.introBuf, () => { if (this.cs === cs && this.phase === 'intro') this.startChatter(); }, CAPTIONS[cs.intro]);
   }
 
   // Debug only (?test or ?debug): fetches and decodes every picture of the case in the browser and reports the
@@ -307,6 +313,8 @@ export class EarshotSystem extends createSystem({}) {
     }
     this.convos = [];
     this.clearCards();
+    this.cap && (this.cap.until = 0);
+    this.liveText = ''; this.liveUntil = 0;
     if (this.hud3) this.hud3.mesh.visible = false;
     this.hudOn = false;
   }
@@ -318,7 +326,8 @@ export class EarshotSystem extends createSystem({}) {
     }
   }
 
-  playHost(buf, done) {
+  playHost(buf, done, text) {
+    if (text && buf) this.showCaption(text, buf.duration);
     if (!buf) { setTimeout(() => done && done(), done ? 5000 : 0); return; }
     const s = this.ctx.createBufferSource();
     s.buffer = buf;
@@ -452,6 +461,7 @@ export class EarshotSystem extends createSystem({}) {
     s.buffer = c.clueBuf; s.connect(c.clueGain); s.connect(c.clueAn);
     s.start(t + 0.4);
     c.clueSrc = s;
+    this.showCaption(CAPTIONS[c.cfg.clue], c.clueBuf.duration, 0.4);
     s.onended = () => { if (this.cs === cs && this.phase === 'play' && this.caughtCount === this.convos.length) this.beginAccuse(); };
     c.clueUntil = performance.now() + (0.4 + c.clueBuf.duration) * 1000 + 200;
     this.clueUntil = Math.max(this.clueUntil, performance.now() + (0.4 + c.clueBuf.duration) * 1000 + 300);
@@ -468,6 +478,93 @@ export class EarshotSystem extends createSystem({}) {
     this.playDing(0.35);
     this.toast = { text: e.note, t: performance.now() };
     this.message = 'Notebook: ' + this.notes.length + ' / ' + this.totalEv;
+  }
+
+  // ---------- captions ----------
+  // A strip just under your eye line that follows your head. Text comes from captions.js, keyed by audio file.
+  showCaption(text, secs, delay) {
+    if (!CAPS_ON || !text) return;
+    const now = performance.now();
+    this.ensureCaption();
+    // Long lines are split into short chunks that follow the voice, timed by how many letters each holds.
+    const chunks = [];
+    let cur = '';
+    for (const part of String(text).split(/(?<=[.!?])\s+/)) {
+      if (cur && (cur + ' ' + part).length > 110) { chunks.push(cur); cur = part; } else cur = cur ? cur + ' ' + part : part;
+    }
+    if (cur) chunks.push(cur);
+    const out = [];
+    for (const ch of chunks) {
+      if (ch.length <= 130) { out.push(ch); continue; }
+      let line = '';
+      for (const w of ch.split(' ')) {
+        if (line && (line + ' ' + w).length > 100) { out.push(line); line = w; } else line = line ? line + ' ' + w : w;
+      }
+      if (line) out.push(line);
+    }
+    const total = out.reduce((a, b) => a + b.length, 0) || 1;
+    let acc = 0;
+    this.cap.parts = out.map((t) => { const a = acc / total; acc += t.length; return { t, at: a }; });
+    this.cap.from = now + (delay || 0) * 1000;
+    this.cap.dur = secs * 1000;
+    this.cap.until = this.cap.from + secs * 1000 + 600;
+    this.cap.text = out[0] || '';
+    this.cap.sig = '';
+  }
+
+  ensureCaption() {
+    if (this.cap && this.cap.mesh) return;
+    const cv = document.createElement('canvas');
+    cv.width = 1024; cv.height = 176;
+    const tex = new CanvasTexture(cv);
+    tex.colorSpace = SRGBColorSpace;
+    const mesh = new Mesh(new PlaneGeometry(0.94, 0.161), new MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false }));
+    mesh.renderOrder = 45;
+    mesh.position.set(0, -0.14, -0.9);
+    mesh.visible = false;
+    this.player.head.add(mesh);
+    this.cap = { cv, ctx: cv.getContext('2d'), tex, mesh, text: '', parts: null, from: 0, until: 0, dur: 1, sig: '' };
+  }
+
+  // Live captions: the words of the conversation you are listening to, at the point in its loop that is playing now.
+  setLive(c, nowMs) {
+    if (!CAPS_ON) return;
+    const segs = c && TIMED[c.cfg.chatter];
+    if (!segs || !c.src) return;
+    for (const g of segs) {
+      if (c.pos >= g[0] - 0.15 && c.pos < g[1] + 0.4) { this.liveText = g[2]; this.liveUntil = nowMs + 450; return; }
+    }
+  }
+
+  updateCaption(nowMs) {
+    const C = this.cap;
+    const explicit = !!C && !!C.parts && C.parts.length > 0 && nowMs >= C.from && nowMs < C.until;
+    const live = !explicit && this.liveText && nowMs < this.liveUntil;
+    if (!C || !C.mesh) {
+      if (!live) return;
+      this.ensureCaption();
+    }
+    const K = this.cap;
+    let text = '';
+    if (explicit) {
+      const prog = clamp01((nowMs - K.from) / (K.dur || 1));
+      let pi = 0;
+      for (let k = 0; k < K.parts.length; k++) if (prog >= K.parts[k].at) pi = k;
+      text = K.parts[pi].t;
+    } else if (live) text = this.liveText;
+    K.mesh.visible = !!text;
+    if (!text || K.sig === text) return;
+    K.sig = text;
+    const g = K.ctx;
+    g.clearRect(0, 0, 1024, 176);
+    g.font = 'bold 36px Arial, Helvetica, sans-serif';
+    const lines = wrapLines(g, text, 940).slice(0, 3);
+    g.font = (lines.length > 2 ? 'bold 30px' : 'bold 36px') + ' Arial, Helvetica, sans-serif';
+    const lh = lines.length > 2 ? 44 : 50, h = lines.length * lh + 26, y0 = (176 - h) / 2;
+    g.fillStyle = 'rgba(8,6,10,0.82)'; roundRect(g, 14, y0, 996, h, 22); g.fill();
+    g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    lines.forEach((ln, i) => g.fillText(ln, 512, y0 + 13 + lh / 2 + i * lh));
+    K.tex.needsUpdate = true;
   }
 
   ensureHud() {
@@ -565,7 +662,7 @@ export class EarshotSystem extends createSystem({}) {
     this.qs = Array.isArray(a) ? a : [a];
     this.qi = 0;
     this.askQuestion();
-    this.playHost(this.askBuf, null);
+    this.playHost(this.askBuf, null, CAPTIONS[this.cs.ask]);
   }
 
   askQuestion() {
@@ -633,7 +730,7 @@ export class EarshotSystem extends createSystem({}) {
         this.finishTimer = setTimeout(() => {
           if (this.cs === cs && this.phase === 'solved') this.finish();
         }, FINALE_HOLD);
-      });
+      }, CAPTIONS[cs.reveal]);
     }, 1600);
   }
 
@@ -888,6 +985,7 @@ export class EarshotSystem extends createSystem({}) {
 
     const state = window.earshotState;
     state.helenLevel = this.hostPlaying ? this.levelOf(this.hostAn) : 0;
+    this.updateCaption(performance.now());
 
     if (!this.ready) { this.hud.textContent = this.message; return; }
 
@@ -946,6 +1044,7 @@ export class EarshotSystem extends createSystem({}) {
     // Which conversation are you facing most directly? (the no-hands gaze assist)
     let lookIdx = -1;
     let lookBest = GAZE_MIN;
+    let liveI = -1, liveF = 0.5; // the conversation you are clearly listening to, for live captions
     for (let i = 0; i < this.convos.length; i++) {
       const c = this.convos[i];
       const dx = c.x - px, dy = c.y - py, dz = c.z - pz;
@@ -992,6 +1091,7 @@ export class EarshotSystem extends createSystem({}) {
 
       // Sound: clearer when you look and cup; far conversations get a boost; chatter ducks while a clue or the host plays.
       const focus = clamp01(0.5 * look + 0.8 * cup);
+      if (this.phase === 'play' && !hush && (!timed || len < HEAR_FAR) && focus > liveF && (cup >= CUP_ON || i === lookIdx)) { liveF = focus; liveI = i; }
       // Far conversations are lifted a little so you can still tell something is going on over there.
       const comp = Math.min(2, Math.max(0.8, Math.pow((1 + 0.5 * (len - 1)) / 1.6, 0.6)));
       c.gain.gain.setTargetAtTime((hush ? QUIET : 0.15 + 0.85 * focus) * c.boost * comp, now, 0.1);
@@ -1051,6 +1151,8 @@ export class EarshotSystem extends createSystem({}) {
         );
       }
     }
+
+    this.setLive(liveI >= 0 ? this.convos[liveI] : null, nowMs);
 
     // Timed case: the countdown, the notebook, and accusing by looking down at it.
     if (timed) {
