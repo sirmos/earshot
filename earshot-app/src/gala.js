@@ -982,7 +982,7 @@ export class GalaSystem extends createSystem({}) {
       }
     }
     const centers = [];
-    for (let b = 0; b < 7; b++) centers.push([(Math.random() - 0.5) * 18, 9 + Math.random() * 5, -6 - Math.random() * 11]);
+    for (let b = 0; b < 7; b++) centers.push([(Math.random() - 0.5) * 16, 7.5 + Math.random() * 3.5, -12 - Math.random() * 6]);
     for (const p of this.fire) {
       const c = centers[p.b];
       const u = Math.random() * 2 - 1, a = Math.random() * TAU, r = Math.sqrt(1 - u * u), sp = 3.0 + Math.random() * 1.6;

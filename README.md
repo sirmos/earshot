@@ -23,7 +23,7 @@ You sit in a room full of people talking at once. You can't speak and you can't 
 4. **Listen.** Face a group and lift a hand toward it. The muffled chatter opens up and the clue plays. A chime tells you it's caught.
 5. **Accuse.** Point at an answer card and hold for about a second. A bar fills while you hold.
 
-Everything works with your hands or your head. No controller is needed at any point. If hand tracking isn't available, looking straight at a group and holding your gaze works as a slower fallback.
+Everything works with your hands or your head. No controller is needed at any point. If hand tracking isn't available, looking straight at a group and holding your gaze works as a slower fallback. Every spoken line is captioned, so you can also read what is said.
 
 ### The three cases
 
@@ -51,6 +51,14 @@ Everything works with your hands or your head. No controller is needed at any po
 - Two wrong answers and the trail goes cold. You have to listen again before you can retry.
 - Case 3 saves your best score and gives you a rank.
 - Play on consecutive days and a streak shows in the case file.
+
+### Captions
+
+The game is built on sound, so every spoken line is captioned.
+
+- The host's lines and the clues you catch show in a strip just under your eye line. Long speeches are split into short pieces that follow the voice.
+- When you listen to a group, the words they are saying appear as they speak.
+- Add `?nocaptions` to the address to hide them.
 
 ## Hand interaction
 
@@ -94,8 +102,10 @@ The project deploys to Vercel from the `main` branch.
 | `?unlock` | Unlocks every case in the case file |
 | `?test` | Shows a readout of look, cup and clue timing for each group |
 | `?debug` | Shows errors on screen |
+| `?reset` | Clears saved progress, best score and streak, to test as a first-time player |
+| `?nocaptions` | Hides the captions |
 
-Progress is stored in your browser's local storage under `earshot-progress`, `earshot-best` and `earshot-streak`. To reset it, run `localStorage.clear()` in the browser console.
+Progress is stored in your browser's local storage under `earshot-progress`, `earshot-best` and `earshot-streak`. To reset it, add `?reset` to the address.
 
 ## How it's built
 
@@ -113,12 +123,15 @@ Progress is stored in your browser's local storage under `earshot-progress`, `ea
 | `src/room.js` | The parlor and conservatory rooms and their guests |
 | `src/gala.js` | The Lumen Awards scene, walking markers, finale and fireworks |
 | `src/cases.js` | The data for every case |
+| `src/captions.js`, `src/captions-timed.js` | What the host and each clue say, and the words of each conversation with start and end times |
 | `src/title.js`, `src/panel.js` | The title screen and in-world panel |
 | `public/audio/`, `public/characters/` | The case audio and the character art |
 
 ### Adding a case
 
 Add an entry to `src/cases.js` with its theme, groups, audio files, accusation questions and finale. Put the audio under `public/audio/` and the character pictures under `public/characters/`. The case file lists it automatically. The comments at the top of `cases.js` explain every field.
+
+For captions, run `node make-captions.mjs` to list the new voice files. Then run `python transcribe-audio.py` (after `pip install faster-whisper soundfile soxr`) to get the text and timings, and paste them into `src/captions.js` and `src/captions-timed.js`.
 
 
 ## What's next
