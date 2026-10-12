@@ -1,0 +1,1557 @@
+{
+ "audio/Voice1.mp3": [
+  {
+   "start": 0.11,
+   "end": 8.81,
+   "text": "welcome to this short video in today I will take you all around through voice"
+  },
+  {
+   "start": 8.81,
+   "end": 16.41,
+   "text": "training recommendation okay so in the next couple of minute I'm going to guide"
+  },
+  {
+   "start": 16.41,
+   "end": 23.45,
+   "text": "you through how you can do some voice modulation so pay attention to what I'm"
+  },
+  {
+   "start": 23.45,
+   "end": 26.65,
+   "text": "going to tell you okay"
+  }
+ ],
+ "audio/Voice2.mp3": [
+  {
+   "start": 4.98,
+   "end": 12.54,
+   "text": "like I told you before I am going to guide you on some voice modulation so pay"
+  },
+  {
+   "start": 12.54,
+   "end": 19.92,
+   "text": "attention and let's get started in this audio modulation we are going to"
+  },
+  {
+   "start": 19.92,
+   "end": 27.1,
+   "text": "consider a few sound fluctuations and all that"
+  }
+ ],
+ "audio/case2/felix-line.mp3": [
+  {
+   "start": 0.0,
+   "end": 3.6,
+   "text": "Sorry for the nerves. I was terrified someone would lift the lid."
+  }
+ ],
+ "audio/case2/g1-chatter.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.24,
+   "text": "Have you seen Winston? He's been muttering about that loan all evening."
+  },
+  {
+   "start": 4.8,
+   "end": 8.96,
+   "text": "Arthur promised to settle it after the toast. Don't you start."
+  },
+  {
+   "start": 9.6,
+   "end": 12.8,
+   "text": "Fifty years, and still arguing over a few coins."
+  },
+  {
+   "start": 13.36,
+   "end": 17.76,
+   "text": "They've argued since 1962. It's how they say hello."
+  },
+  {
+   "start": 18.32,
+   "end": 20.96,
+   "text": "Quite right. Did you try the pastries?"
+  },
+  {
+   "start": 21.6,
+   "end": 23.68,
+   "text": "Three. Don't tell my doctor."
+  }
+ ],
+ "audio/case2/g1-clue.mp3": [
+  {
+   "start": 0.0,
+   "end": 8.8,
+   "text": "Oh, Winston's not your thief, dear. He hasn't left the buffet since 7. I've watched every sausage roll go."
+  }
+ ],
+ "audio/case2/g2-chatter.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.08,
+   "text": "Two minutes until the toast been. Is the cake ready?"
+  },
+  {
+   "start": 4.08,
+   "end": 7.92,
+   "text": "Candles in matches out. Is it true somebody lost something?"
+  },
+  {
+   "start": 7.92,
+   "end": 12.56,
+   "text": "Something of Beatrice's. Keep your eyes open and your mouth shut."
+  },
+  {
+   "start": 12.56,
+   "end": 16.08,
+   "text": "The florist was in and out of the coat room earlier, you know?"
+  },
+  {
+   "start": 16.08,
+   "end": 19.84,
+   "text": "Delivering coat room flowers. Don't gossip."
+  },
+  {
+   "start": 19.84,
+   "end": 20.72,
+   "text": "Just saying."
+  }
+ ],
+ "audio/case2/g2-clue.mp3": [
+  {
+   "start": 0.0,
+   "end": 5.52,
+   "text": "Odd thing though, the pianist keeps lifting his piano lid between songs."
+  },
+  {
+   "start": 5.52,
+   "end": 10.16,
+   "text": "Nothing to do with the music, and he drops at the moment anyone looks over."
+  }
+ ],
+ "audio/case2/g3-chatter.mp3": [
+  {
+   "start": 0.0,
+   "end": 2.0,
+   "text": "50 years I"
+  },
+  {
+   "start": 2.14,
+   "end": 4.14,
+   "text": "Remember their wedding like yesterday"
+  },
+  {
+   "start": 4.66,
+   "end": 9.02,
+   "text": "you wore a hat the size of a wagon wheel it was fashionable and"
+  },
+  {
+   "start": 10.06,
+   "end": 12.14,
+   "text": "Beatrice's locket was the star of the day"
+  },
+  {
+   "start": 13.2,
+   "end": 19.12,
+   "text": "Arthur gave it to her at the altar hand shaking poor Beatrice keeps touching her neck"
+  },
+  {
+   "start": 19.98,
+   "end": 21.98,
+   "text": "She misses it"
+  },
+  {
+   "start": 21.98,
+   "end": 24.8,
+   "text": "It'll turn up things always do"
+  }
+ ],
+ "audio/case2/g3-clue.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.0,
+   "text": "Between us, Arthur's been whispering with the pianist all week."
+  },
+  {
+   "start": 4.0,
+   "end": 8.64,
+   "text": "A surprise for Beatrice, he says. Wouldn't tell me a word more."
+  }
+ ],
+ "audio/case2/g4-chatter.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.88,
+   "text": "Where's Kit gone? I saw him slip out the side door looking very shifty."
+  },
+  {
+   "start": 4.88,
+   "end": 8.4,
+   "text": "Shifty? He was grinning. He's up to something."
+  },
+  {
+   "start": 8.4,
+   "end": 13.36,
+   "text": "Gran's locket goes missing. And Kit vanishes. You do the maths."
+  },
+  {
+   "start": 13.36,
+   "end": 17.28,
+   "text": "Don't be daft. You've watched too many detective films."
+  },
+  {
+   "start": 17.28,
+   "end": 19.6,
+   "text": "Maybe. Pass me a napkin."
+  },
+  {
+   "start": 19.6,
+   "end": 20.88,
+   "text": "Get your own."
+  }
+ ],
+ "audio/case2/g4-clue.mp3": [
+  {
+   "start": 0.0,
+   "end": 3.28,
+   "text": "Kit's been on the terrace taking photos of the cake for granted."
+  },
+  {
+   "start": 3.28,
+   "end": 8.48,
+   "text": "I've got the timestamps right here, 710-8. He never went near the coat room."
+  }
+ ],
+ "audio/case2/intro.mp3": [
+  {
+   "start": 0.0,
+   "end": 5.2,
+   "text": "Welcome back. Tonight is Arthur and Beatrice's golden anniversary."
+  },
+  {
+   "start": 5.2,
+   "end": 9.76,
+   "text": "Ten minutes before the toast, Beatrice's locket has vanished from the coat room,"
+  },
+  {
+   "start": 9.76,
+   "end": 14.96,
+   "text": "and nobody wants a scene. Four little conversations are going on around you."
+  },
+  {
+   "start": 14.96,
+   "end": 21.68,
+   "text": "Look toward one, cup a hand to your ear, and listen in. The truth is always in the quiet bits."
+  }
+ ],
+ "audio/case2/reveal.mp3": [
+  {
+   "start": 0.0,
+   "end": 16.0,
+   "text": "Well listened. Winston was at the buffet, Kit was on the terrace, and Felix was only keeping a promise. Arthur asked him to hide the locket inside the piano, and keep it safe until the toast. 50 years, and still full of surprises."
+  }
+ ],
+ "audio/case3/ask.mp3": [
+  {
+   "start": 0.0,
+   "end": 7.6,
+   "text": "Time's up, or you've heard enough. Three questions, detective. Point at your answers and hold."
+  }
+ ],
+ "audio/case3/g1.mp3": [
+  {
+   "start": 0.0,
+   "end": 5.36,
+   "text": "Okay, one oat milk espresso martini for the man who swore he's off caffeine."
+  },
+  {
+   "start": 5.36,
+   "end": 8.32,
+   "text": "It's technically a dessert. Don't look at me like that."
+  },
+  {
+   "start": 8.32,
+   "end": 13.28,
+   "text": "You've been jittery since soundcheck. It's giving producer with a secret."
+  },
+  {
+   "start": 13.28,
+   "end": 16.96,
+   "text": "I'm not hiding anything. I'm hydrating. Kai, tell her."
+  },
+  {
+   "start": 16.96,
+   "end": 18.96,
+   "text": "I make drinks. I don't testify."
+  },
+  {
+   "start": 19.68,
+   "end": 24.4,
+   "text": "Honestly, whoever did the pool lighting tonight deserves their own trophy."
+  },
+  {
+   "start": 24.4,
+   "end": 26.96,
+   "text": "Speaking of trophies, are you nervous?"
+  },
+  {
+   "start": 26.96,
+   "end": 32.72,
+   "text": "I wrote four speeches and binned three. The fourth has a joke about my mom's jelof."
+  },
+  {
+   "start": 32.72,
+   "end": 35.84,
+   "text": "If you win, the jelof gets a plus one."
+  },
+  {
+   "start": 35.84,
+   "end": 38.32,
+   "text": "You're winning. The streams don't lie."
+  },
+  {
+   "start": 38.32,
+   "end": 42.32,
+   "text": "Streams lie constantly. Where were you earlier, anyway?"
+  },
+  {
+   "start": 42.32,
+   "end": 45.36,
+   "text": "I called at ten past eight and got voicemail."
+  },
+  {
+   "start": 45.36,
+   "end": 47.92,
+   "text": "Oh, I was down at the deep end on a call with the label."
+  },
+  {
+   "start": 47.92,
+   "end": 52.8,
+   "text": "Eight ten till about eight twenty, pacing, arguing over my own invoice."
+  },
+  {
+   "start": 52.8,
+   "end": 56.24,
+   "text": "Ask Kai. He watched me wear a groove in the tiles."
+  },
+  {
+   "start": 56.32,
+   "end": 60.56,
+   "text": "He did. Very dramatic. Left his drink. Came back."
+  },
+  {
+   "start": 60.56,
+   "end": 62.8,
+   "text": "Drink warm. Mood warmer."
+  },
+  {
+   "start": 62.8,
+   "end": 64.08,
+   "text": "That's my guy."
+  },
+  {
+   "start": 64.08,
+   "end": 64.88,
+   "text": "Don't."
+  },
+  {
+   "start": 64.88,
+   "end": 68.16,
+   "text": "Quiet moment. So here's a weird one."
+  },
+  {
+   "start": 68.16,
+   "end": 70.96,
+   "text": "Somebody's been staring at the pool house all night."
+  },
+  {
+   "start": 70.96,
+   "end": 73.04,
+   "text": "The little glass cabin at the end."
+  },
+  {
+   "start": 74.16,
+   "end": 76.88,
+   "text": "Around quarter past eight, the lights came on in there."
+  },
+  {
+   "start": 76.88,
+   "end": 79.76,
+   "text": "And someone carried a long, flat case through the door."
+  },
+  {
+   "start": 79.76,
+   "end": 82.88,
+   "text": "Didn't see a face. Just a tablet under one arm."
+  },
+  {
+   "start": 82.88,
+   "end": 84.88,
+   "text": "Walking fast like they were late."
+  },
+  {
+   "start": 84.88,
+   "end": 87.28,
+   "text": "Probably catering, storing dessert."
+  },
+  {
+   "start": 87.28,
+   "end": 90.72,
+   "text": "Catering doesn't get the pool house. It's locked all week."
+  },
+  {
+   "start": 90.72,
+   "end": 92.16,
+   "text": "That's why I noticed."
+  },
+  {
+   "start": 92.16,
+   "end": 96.24,
+   "text": "K mystery at the pool. Very thriller series on streaming."
+  },
+  {
+   "start": 96.24,
+   "end": 98.72,
+   "text": "Bartender detective. I'd watch it."
+  },
+  {
+   "start": 98.72,
+   "end": 101.28,
+   "text": "Next round's free for whoever finds a spare key."
+  },
+  {
+   "start": 101.84,
+   "end": 104.88,
+   "text": "Can we talk about anything that isn't a plot?"
+  },
+  {
+   "start": 104.88,
+   "end": 107.68,
+   "text": "I need a distraction before Jules calls my name."
+  },
+  {
+   "start": 108.32,
+   "end": 112.96,
+   "text": "Fine. Hot take. The string trio is the best act of the night."
+  },
+  {
+   "start": 112.96,
+   "end": 115.12,
+   "text": "Mood. But also true."
+  },
+  {
+   "start": 115.12,
+   "end": 116.88,
+   "text": "They've been tuning for ten minutes."
+  },
+  {
+   "start": 116.88,
+   "end": 120.08,
+   "text": "And it already beats my last three playlists."
+  },
+  {
+   "start": 120.08,
+   "end": 122.0,
+   "text": "I want them at my funeral."
+  },
+  {
+   "start": 122.0,
+   "end": 123.68,
+   "text": "Cello cover of my own song."
+  },
+  {
+   "start": 124.32,
+   "end": 124.88,
+   "text": "Wow."
+  },
+  {
+   "start": 124.88,
+   "end": 126.56,
+   "text": "I said what I said."
+  },
+  {
+   "start": 126.56,
+   "end": 129.36,
+   "text": "All right. Last call before the ceremony."
+  },
+  {
+   "start": 129.36,
+   "end": 130.64,
+   "text": "Who's thirsty?"
+  },
+  {
+   "start": 130.64,
+   "end": 131.52,
+   "text": "Always."
+  }
+ ],
+ "audio/case3/g2.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.48,
+   "text": "Chat say hi to the Terrace. We are live from the Lumen Awards pre-show,"
+  },
+  {
+   "start": 4.48,
+   "end": 6.0,
+   "text": "and yes, I'm wearing the jacket."
+  },
+  {
+   "start": 6.64,
+   "end": 9.2,
+   "text": "Jonah, put the phone down for one minute."
+  },
+  {
+   "start": 9.2,
+   "end": 12.64,
+   "text": "Your jacket has more sequins than my entire fitting room."
+  },
+  {
+   "start": 12.64,
+   "end": 14.4,
+   "text": "Sequins are content."
+  },
+  {
+   "start": 14.4,
+   "end": 14.96,
+   "text": "Ximena."
+  },
+  {
+   "start": 15.6,
+   "end": 20.48,
+   "text": "Everything's content to you. Some of us are trying to run an actual career here."
+  },
+  {
+   "start": 21.2,
+   "end": 25.12,
+   "text": "Amara, you manage three nominees. You're basically a celebrity."
+  },
+  {
+   "start": 25.12,
+   "end": 28.96,
+   "text": "I manage anxiety. The nominees are a side effect."
+  },
+  {
+   "start": 29.76,
+   "end": 34.96,
+   "text": "Honestly, Xianna's dress took four fittings, and she still wants the hem shorter."
+  },
+  {
+   "start": 34.96,
+   "end": 36.48,
+   "text": "Xianna doesn't need to worry."
+  },
+  {
+   "start": 37.2,
+   "end": 41.12,
+   "text": "Between us, the Academy chair as good as told me the big one is hers."
+  },
+  {
+   "start": 41.84,
+   "end": 43.52,
+   "text": "The envelopes of formality."
+  },
+  {
+   "start": 44.24,
+   "end": 46.96,
+   "text": "Wait, really? That's not what Nia's team is saying."
+  },
+  {
+   "start": 47.6,
+   "end": 51.28,
+   "text": "Nia's team can say what they like. I know what I know."
+  },
+  {
+   "start": 52.08,
+   "end": 57.12,
+   "text": "Hold on, Chat's losing it. Somebody's asking if the trophy's real gold."
+  },
+  {
+   "start": 57.2,
+   "end": 60.32,
+   "text": "It's gold-plated. Don't give people ideas."
+  },
+  {
+   "start": 60.32,
+   "end": 62.72,
+   "text": "I filmed it earlier. Look."
+  },
+  {
+   "start": 62.72,
+   "end": 67.04,
+   "text": "Replay. Timestamp. 812 and 40 seconds."
+  },
+  {
+   "start": 67.04,
+   "end": 71.04,
+   "text": "See? Still on the plinth, spotlight on it, chat spam gorgeous."
+  },
+  {
+   "start": 71.76,
+   "end": 73.2,
+   "text": "You were filming the plinth?"
+  },
+  {
+   "start": 73.92,
+   "end": 77.52,
+   "text": "I was filming everything. I film my breakfast."
+  },
+  {
+   "start": 77.52,
+   "end": 78.72,
+   "text": "That's true. He does."
+  },
+  {
+   "start": 79.44,
+   "end": 83.04,
+   "text": "Delete the sequin close-ups. Keep the trophy."
+  },
+  {
+   "start": 83.76,
+   "end": 89.52,
+   "text": "Okay, but nobody saw it vanish. Chat's already making theories. Someone said aliens."
+  },
+  {
+   "start": 90.08,
+   "end": 93.76,
+   "text": "Aliens love a fashion week. Not an award show."
+  },
+  {
+   "start": 93.76,
+   "end": 95.92,
+   "text": "Someone said it's a rigged stunt for views."
+  },
+  {
+   "start": 96.56,
+   "end": 101.52,
+   "text": "If you've heard this event for a few views, Jonah, I will personally unfollow you in real life."
+  },
+  {
+   "start": 102.16,
+   "end": 103.12,
+   "text": "That's not a thing."
+  },
+  {
+   "start": 103.76,
+   "end": 104.8,
+   "text": "I'll make it a thing."
+  },
+  {
+   "start": 105.52,
+   "end": 109.84,
+   "text": "Can someone hold my clutch? I need both hands to fix the sip."
+  },
+  {
+   "start": 109.84,
+   "end": 112.4,
+   "text": "I'll hold it. Is it expensive?"
+  },
+  {
+   "start": 112.4,
+   "end": 115.52,
+   "text": "It's vintage. Worth more than your channel."
+  },
+  {
+   "start": 115.52,
+   "end": 116.4,
+   "text": "Rude but fair."
+  },
+  {
+   "start": 117.12,
+   "end": 118.56,
+   "text": "Phones away, children."
+  },
+  {
+   "start": 119.2,
+   "end": 122.88,
+   "text": "The ceremony is minutes out and I have three heart rates to monitor."
+  },
+  {
+   "start": 123.6,
+   "end": 124.56,
+   "text": "For counting mine."
+  },
+  {
+   "start": 125.12,
+   "end": 126.64,
+   "text": "Five counting chat."
+  }
+ ],
+ "audio/case3/g3.mp3": [
+  {
+   "start": 0.0,
+   "end": 3.36,
+   "text": "A is flat. Elias, your A is flat again."
+  },
+  {
+   "start": 3.36,
+   "end": 7.84,
+   "text": "My A is a philosophical A. It's choosing its own path."
+  },
+  {
+   "start": 7.84,
+   "end": 10.88,
+   "text": "Your A is going to get us fired before the ceremony."
+  },
+  {
+   "start": 10.88,
+   "end": 16.32,
+   "text": "Kay from the top of the Debussy but quieter. Jules wants the music underneath everything."
+  },
+  {
+   "start": 16.32,
+   "end": 21.28,
+   "text": "Quieter than quiet. Chamber music for people who are scared of chamber music."
+  },
+  {
+   "start": 21.28,
+   "end": 25.6,
+   "text": "I'm just glad we got the corner spot. Best view of the pool and the plinth."
+  },
+  {
+   "start": 25.6,
+   "end": 30.32,
+   "text": "Speaking of the plinth, did anyone else see that waiter hovering around it earlier?"
+  },
+  {
+   "start": 30.32,
+   "end": 35.68,
+   "text": "White jacket, tray of canapes, kept circling the stand like he was guarding it."
+  },
+  {
+   "start": 35.68,
+   "end": 40.24,
+   "text": "I thought he'd take a bite out of the trophy. He asked me if the cello was real wood."
+  },
+  {
+   "start": 40.24,
+   "end": 41.44,
+   "text": "What did you say?"
+  },
+  {
+   "start": 41.44,
+   "end": 46.96,
+   "text": "I said it's carbon fiber and he lost all interest. People get weird around anything shiny."
+  },
+  {
+   "start": 46.96,
+   "end": 49.52,
+   "text": "Fine, but here's the part one actually noticed."
+  },
+  {
+   "start": 49.52,
+   "end": 53.92,
+   "text": "Around quarter past eight when we were retuning, someone came right up to the plinth."
+  },
+  {
+   "start": 53.92,
+   "end": 60.96,
+   "text": "Oh yes, someone in all black. Cargo trousers, a headset, a tablet tucked under one arm."
+  },
+  {
+   "start": 60.96,
+   "end": 63.84,
+   "text": "They lifted the trophy into a small flight case,"
+  },
+  {
+   "start": 63.84,
+   "end": 67.6,
+   "text": "clicked it shut and walked off toward the pool house like it was nothing."
+  },
+  {
+   "start": 67.6,
+   "end": 71.84,
+   "text": "Walk not ran. Commas anything. I assumed it was part of the show."
+  },
+  {
+   "start": 71.84,
+   "end": 76.56,
+   "text": "I did too. Crew in black are invisible. You stop seeing them."
+  },
+  {
+   "start": 76.56,
+   "end": 79.52,
+   "text": "That's what bothers me. Nobody blinked."
+  },
+  {
+   "start": 79.52,
+   "end": 82.24,
+   "text": "Because it looked normal. That's the whole trick."
+  },
+  {
+   "start": 82.32,
+   "end": 86.48,
+   "text": "Okay, now I'm suspicious of everyone in black. Including us."
+  },
+  {
+   "start": 87.04,
+   "end": 87.92,
+   "text": "We're wearing black."
+  },
+  {
+   "start": 88.56,
+   "end": 93.76,
+   "text": "Exactly. Alibi? We were literally on a stage with a hundred witnesses."
+  },
+  {
+   "start": 93.76,
+   "end": 97.84,
+   "text": "Tuning, tuning, tuning. Back to Debussy before Jules loses it."
+  },
+  {
+   "start": 98.48,
+   "end": 101.76,
+   "text": "On three. Wait, my peg slipped."
+  },
+  {
+   "start": 101.76,
+   "end": 102.4,
+   "text": "Tobias."
+  },
+  {
+   "start": 103.36,
+   "end": 107.6,
+   "text": "It's a cello, not a car. It's allowed to slip. Take it from the top."
+  },
+  {
+   "start": 107.6,
+   "end": 109.6,
+   "text": "Quietly. Gorgeously."
+  },
+  {
+   "start": 109.6,
+   "end": 111.36,
+   "text": "And try not to look at the pool house."
+  }
+ ],
+ "audio/case3/g4.mp3": [
+  {
+   "start": 0.0,
+   "end": 5.68,
+   "text": "Dr. Walker, you look stressed. Let me guess, someone moved a monitor wedge."
+  },
+  {
+   "start": 5.68,
+   "end": 13.08,
+   "text": "Gus, I have chaired this academy for twelve years. Monitor wedges are the least of my problems tonight."
+  },
+  {
+   "start": 13.08,
+   "end": 15.24,
+   "text": "Bigger than a feedback loop."
+  },
+  {
+   "start": 15.24,
+   "end": 22.32,
+   "text": "Much bigger. And please call me Imani. I'm wearing sneakers with a gown. We've moved past titles."
+  },
+  {
+   "start": 22.32,
+   "end": 27.36,
+   "text": "Huh. Respect. I did my whole career in a leather jacket in July."
+  },
+  {
+   "start": 27.6,
+   "end": 32.08,
+   "text": "You and your jacket. Do you remember the old awards?"
+  },
+  {
+   "start": 32.08,
+   "end": 36.4,
+   "text": "Reel to reel. Velvet curtains. One microphone."
+  },
+  {
+   "start": 36.4,
+   "end": 39.68,
+   "text": "I remember when the cloud was a thing you sat under."
+  },
+  {
+   "start": 39.68,
+   "end": 44.0,
+   "text": "Now every winner's name goes through three spreadsheets and a group chat."
+  },
+  {
+   "start": 44.0,
+   "end": 50.0,
+   "text": "And a plaque. Don't forget the plaque. Small thing causes the biggest panic."
+  },
+  {
+   "start": 50.0,
+   "end": 54.32,
+   "text": "Oh, don't. The engraver emailed me this afternoon."
+  },
+  {
+   "start": 54.32,
+   "end": 60.8,
+   "text": "A proof for the artist of the year nameplate, and there's an error on it. One wrong letter in the artist's surname."
+  },
+  {
+   "start": 60.8,
+   "end": 66.16,
+   "text": "The corrected plate arrives tonight, and I told stage management to keep it quiet."
+  },
+  {
+   "start": 66.16,
+   "end": 69.68,
+   "text": "One letter. People have cried over less."
+  },
+  {
+   "start": 69.68,
+   "end": 74.8,
+   "text": "Imagine announcing the biggest name of the night with her name spelled wrong on the trophy."
+  },
+  {
+   "start": 74.8,
+   "end": 78.96,
+   "text": "That's a meme for life. That's a lawsuit for life."
+  },
+  {
+   "start": 78.96,
+   "end": 84.16,
+   "text": "I told my wife this whole job is just fixing small things before someone notices."
+  },
+  {
+   "start": 84.24,
+   "end": 87.2,
+   "text": "That's every job. Truly."
+  },
+  {
+   "start": 87.2,
+   "end": 93.36,
+   "text": "Speaking of small fixes. Tess, the stage manager, grabbed my micro screwdriver and a polishing"
+  },
+  {
+   "start": 93.36,
+   "end": 98.88,
+   "text": "cloth around ten past eight. Said she had a nameplate to sort out and wouldn't say more."
+  },
+  {
+   "start": 98.88,
+   "end": 101.84,
+   "text": "Looked like she was carrying the whole night on her shoulders."
+  },
+  {
+   "start": 102.48,
+   "end": 107.6,
+   "text": "She usually does. Best stage manager I've worked with in twelve years."
+  },
+  {
+   "start": 108.32,
+   "end": 113.92,
+   "text": "Still, a screwdriver for a nameplate? I figured she'd just call the engraver."
+  },
+  {
+   "start": 114.0,
+   "end": 118.64,
+   "text": "Not if the engraver's on site. They love a last-minute house call."
+  },
+  {
+   "start": 119.28,
+   "end": 125.36,
+   "text": "I'll never understand awards, people. We don't, either. We just keep the lights on and the"
+  },
+  {
+   "start": 125.36,
+   "end": 127.92,
+   "text": "speeches short. Do you want a drink?"
+  },
+  {
+   "start": 128.56,
+   "end": 135.28,
+   "text": "Only if it comes with a straw and no questions. Deal. Come on. The open bar is calling and the"
+  },
+  {
+   "start": 135.28,
+   "end": 141.28,
+   "text": "quartet's starting. Trio. Gus. Three musicians. Details."
+  }
+ ],
+ "audio/case3/g5.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.8,
+   "text": "Sienna, stop touching your hair. I spent 40 minutes on that wave."
+  },
+  {
+   "start": 4.8,
+   "end": 7.52,
+   "text": "It's moving. Marcus, is it moving?"
+  },
+  {
+   "start": 7.52,
+   "end": 11.84,
+   "text": "It's not moving. Nothing moves in this hair. It has security clearance."
+  },
+  {
+   "start": 12.48,
+   "end": 17.04,
+   "text": "Nice. Your hair has a bodyguard. Mine just has hope."
+  },
+  {
+   "start": 17.04,
+   "end": 21.84,
+   "text": "Idris, you're an orange. You don't need hope. You need a lifeguard."
+  },
+  {
+   "start": 21.84,
+   "end": 25.76,
+   "text": "It's called a statement color. The academy has seen worse."
+  },
+  {
+   "start": 25.76,
+   "end": 29.52,
+   "text": "Okay, group photo before anything else. Everyone in."
+  },
+  {
+   "start": 29.6,
+   "end": 33.36,
+   "text": "Sienna Center, Idris, don't hide behind Marcus."
+  },
+  {
+   "start": 33.36,
+   "end": 35.76,
+   "text": "I'm not hiding. I'm blocking."
+  },
+  {
+   "start": 35.76,
+   "end": 41.92,
+   "text": "Smile on three. Three. There. Check the time. 815 on the dot. Lovely."
+  },
+  {
+   "start": 42.48,
+   "end": 44.48,
+   "text": "Perfect. Post it."
+  },
+  {
+   "start": 44.48,
+   "end": 46.64,
+   "text": "Caption. Nominated and nervous."
+  },
+  {
+   "start": 47.2,
+   "end": 50.96,
+   "text": "Caption. Nominated and slightly taller than Sienna."
+  },
+  {
+   "start": 50.96,
+   "end": 52.88,
+   "text": "I'm wearing heels, Idris."
+  },
+  {
+   "start": 52.88,
+   "end": 54.24,
+   "text": "I'm wearing hope."
+  },
+  {
+   "start": 54.24,
+   "end": 57.92,
+   "text": "He's been standing at this table the whole evening, honestly."
+  },
+  {
+   "start": 58.0,
+   "end": 61.12,
+   "text": "I did his time myself at eight and he hasn't moved."
+  },
+  {
+   "start": 61.12,
+   "end": 66.32,
+   "text": "I can confirm. I've been watching him eat canapes like a competitive sport."
+  },
+  {
+   "start": 66.32,
+   "end": 68.96,
+   "text": "I got a standing ovation from Evalo Vent."
+  },
+  {
+   "start": 69.52,
+   "end": 71.44,
+   "text": "Can we talk about the trophy thing?"
+  },
+  {
+   "start": 71.44,
+   "end": 72.16,
+   "text": "Sienna, no."
+  },
+  {
+   "start": 72.72,
+   "end": 77.52,
+   "text": "Everyone's whispering that it's missing. I think it's a stunt. For the cameras."
+  },
+  {
+   "start": 77.52,
+   "end": 82.16,
+   "text": "If I wanted that trophy, I'd just win it. Stealing is such a lazy plot."
+  },
+  {
+   "start": 82.72,
+   "end": 87.12,
+   "text": "Speaking of lazy plots, I saw Remy the publicist at the plinth earlier"
+  },
+  {
+   "start": 87.12,
+   "end": 89.44,
+   "text": "taking photos of it like it was a model."
+  },
+  {
+   "start": 89.44,
+   "end": 94.88,
+   "text": "Remy was on the press line at 14 past. I walked past him on the way back from the car,"
+  },
+  {
+   "start": 94.88,
+   "end": 96.8,
+   "text": "giving a quote to some blogger."
+  },
+  {
+   "start": 96.8,
+   "end": 98.64,
+   "text": "He's always giving quotes."
+  },
+  {
+   "start": 98.64,
+   "end": 100.72,
+   "text": "So he's not your guy. Probably."
+  },
+  {
+   "start": 101.28,
+   "end": 105.12,
+   "text": "Probably. Everyone's a suspect until they have a receipt."
+  },
+  {
+   "start": 105.12,
+   "end": 107.36,
+   "text": "Add that to your next album."
+  },
+  {
+   "start": 107.36,
+   "end": 108.16,
+   "text": "Oh, I will."
+  },
+  {
+   "start": 109.2,
+   "end": 112.16,
+   "text": "Sienna. Hair. Hands. Down."
+  },
+  {
+   "start": 112.8,
+   "end": 115.36,
+   "text": "Fine. I'll just stand here and glow."
+  },
+  {
+   "start": 115.36,
+   "end": 117.68,
+   "text": "Perfect. That's the whole brand."
+  }
+ ],
+ "audio/case3/g6.mp3": [
+  {
+   "start": 0.0,
+   "end": 6.0,
+   "text": "Tess, do you have two minutes? I need a quote about the plinth for the behind-the-scenes post."
+  },
+  {
+   "start": 6.0,
+   "end": 11.0,
+   "text": "I have exactly zero minutes, Remy. We're 11 minutes from the ceremony."
+  },
+  {
+   "start": 11.0,
+   "end": 14.0,
+   "text": "Eleven? I thought we had fifteen."
+  },
+  {
+   "start": 14.0,
+   "end": 16.0,
+   "text": "We had fifteen when you started talking."
+  },
+  {
+   "start": 16.0,
+   "end": 23.0,
+   "text": "Rude. Okay, quick one. Who's presenting artist of the year? Jules, right?"
+  },
+  {
+   "start": 23.0,
+   "end": 28.0,
+   "text": "Into headset, copy that, engraver. Ten more minutes, that's all I need."
+  },
+  {
+   "start": 28.0,
+   "end": 34.0,
+   "text": "No, don't bring the plate through the main doors. Come round the poolside and use the glass cabin."
+  },
+  {
+   "start": 34.0,
+   "end": 37.0,
+   "text": "And whoever you are, don't tell Jules he'll spiral."
+  },
+  {
+   "start": 37.0,
+   "end": 39.0,
+   "text": "Sorry, who are you talking to?"
+  },
+  {
+   "start": 39.0,
+   "end": 43.0,
+   "text": "Nobody. Production stuff. Boring."
+  },
+  {
+   "start": 43.0,
+   "end": 46.0,
+   "text": "Boring? You've got a face like a fire alarm."
+  },
+  {
+   "start": 46.0,
+   "end": 49.0,
+   "text": "Remy, go and do publicity at someone else."
+  },
+  {
+   "start": 49.0,
+   "end": 56.0,
+   "text": "Fine, fine. I'm going to the press line. But Jules is asking about the trophy, just so you know."
+  },
+  {
+   "start": 56.0,
+   "end": 59.0,
+   "text": "Tell Jules it's being polished. That's all."
+  },
+  {
+   "start": 59.0,
+   "end": 62.0,
+   "text": "Polished? It's already shiny."
+  },
+  {
+   "start": 62.0,
+   "end": 64.0,
+   "text": "Shinier."
+  },
+  {
+   "start": 64.0,
+   "end": 67.0,
+   "text": "Okay. Weird. But okay."
+  },
+  {
+   "start": 67.0,
+   "end": 71.0,
+   "text": "Can you keep every photographer away from the plinth for ten minutes?"
+  },
+  {
+   "start": 71.0,
+   "end": 74.0,
+   "text": "I can try. They love a plinth."
+  },
+  {
+   "start": 74.0,
+   "end": 77.0,
+   "text": "Thank you. Genuinely, you're a legend."
+  },
+  {
+   "start": 77.0,
+   "end": 80.0,
+   "text": "I'll put that on my business card."
+  },
+  {
+   "start": 80.0,
+   "end": 83.0,
+   "text": "Don't. Go. Press line. Now."
+  },
+  {
+   "start": 83.0,
+   "end": 86.0,
+   "text": "Going. Also, Tess?"
+  },
+  {
+   "start": 86.0,
+   "end": 88.0,
+   "text": "What?"
+  },
+  {
+   "start": 88.0,
+   "end": 90.0,
+   "text": "Your headset's blinking red."
+  },
+  {
+   "start": 90.0,
+   "end": 92.0,
+   "text": "Of course it is."
+  },
+  {
+   "start": 92.0,
+   "end": 95.0,
+   "text": "Want me to hold the tablet while you fix it?"
+  },
+  {
+   "start": 95.0,
+   "end": 101.0,
+   "text": "No. Nobody touches the tablet. It has the entire running order on it and a very important note."
+  },
+  {
+   "start": 101.0,
+   "end": 103.0,
+   "text": "Mysterious."
+  },
+  {
+   "start": 103.0,
+   "end": 105.0,
+   "text": "Press line, Remy."
+  },
+  {
+   "start": 105.0,
+   "end": 107.0,
+   "text": "Going, going."
+  },
+  {
+   "start": 107.0,
+   "end": 111.0,
+   "text": "One more thing. Is it true the winner's already decided?"
+  },
+  {
+   "start": 111.0,
+   "end": 113.0,
+   "text": "Remy, I run the stage, not the votes."
+  },
+  {
+   "start": 113.0,
+   "end": 117.0,
+   "text": "Rumors say the chair told Sienna's manager she's got it."
+  },
+  {
+   "start": 117.0,
+   "end": 120.0,
+   "text": "Rumors say a lot. Do your job, I'll do mine."
+  },
+  {
+   "start": 120.0,
+   "end": 122.0,
+   "text": "Which is?"
+  },
+  {
+   "start": 122.0,
+   "end": 126.0,
+   "text": "Making sure nobody finds out what I'm doing for exactly ten more minutes."
+  },
+  {
+   "start": 126.0,
+   "end": 128.0,
+   "text": "That sounds illegal."
+  },
+  {
+   "start": 128.0,
+   "end": 130.0,
+   "text": "It's mostly spelling."
+  },
+  {
+   "start": 130.0,
+   "end": 132.0,
+   "text": "Spelling?"
+  },
+  {
+   "start": 132.0,
+   "end": 134.0,
+   "text": "Go to the press line."
+  }
+ ],
+ "audio/case3/intro.mp3": [
+  {
+   "start": 0.0,
+   "end": 6.64,
+   "text": "Good evening, ladies and gentlemen. It's Lumen Awards, and I am your host, Jules."
+  },
+  {
+   "start": 6.64,
+   "end": 13.2,
+   "text": "We have a problem. 12 minutes before the ceremony, our golden waveform, the trophy for Artist of the"
+  },
+  {
+   "start": 13.2,
+   "end": 20.48,
+   "text": "Year, has vanished from its plinth. Nobody's panicking. Well, I am, quietly. The terrace"
+  },
+  {
+   "start": 20.48,
+   "end": 26.0,
+   "text": "is full of people talking, and the truth is in the details. Cup a hand to your ear,"
+  },
+  {
+   "start": 26.0,
+   "end": 31.84,
+   "text": "turn toward a conversation, and listen. Whatever you overhear goes in your notebook."
+  },
+  {
+   "start": 31.84,
+   "end": 38.24,
+   "text": "When you think you know, look down at it and make your accusation. Good luck, detective."
+  }
+ ],
+ "audio/case3/reveal.mp3": [
+  {
+   "start": 0.0,
+   "end": 5.6,
+   "text": "Brilliant! Tess, our stage manager, spotted a misspelled nameplate and took the trophy"
+  },
+  {
+   "start": 5.6,
+   "end": 10.88,
+   "text": "to the poolhouse so the engraver could fix it before anyone noticed. She kept it quiet to"
+  },
+  {
+   "start": 10.88,
+   "end": 17.52,
+   "text": "protect the night. She'll be back with a perfect golden waveform in time. Ladies and gentlemen,"
+  },
+  {
+   "start": 17.52,
+   "end": 18.88,
+   "text": "the Lumen Awards!"
+  }
+ ],
+ "audio/front-chatter.mp3": [
+  {
+   "start": 0.0,
+   "end": 2.4,
+   "text": "This is a lovely evening, isn't it?"
+  },
+  {
+   "start": 2.4,
+   "end": 5.68,
+   "text": "It is. Margaret looks so happy."
+  },
+  {
+   "start": 5.68,
+   "end": 8.96,
+   "text": "She deserves it. Did you see her dress?"
+  },
+  {
+   "start": 8.96,
+   "end": 11.68,
+   "text": "I did. Very elegant."
+  },
+  {
+   "start": 11.68,
+   "end": 14.24,
+   "text": "I hope the speeches aren't too long."
+  },
+  {
+   "start": 14.24,
+   "end": 16.72,
+   "text": "With Helen's family, they will be."
+  }
+ ],
+ "audio/front-clue.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.88,
+   "text": "Helen told me she gave the pantry key to her brother, Victor, for safekeeping."
+  }
+ ],
+ "audio/intro.mp3": [
+  {
+   "start": 0.0,
+   "end": 6.08,
+   "text": "Oh, thank goodness you're here! Margaret's gift has vanished, and she arrives any minute."
+  },
+  {
+   "start": 6.96,
+   "end": 13.04,
+   "text": "Somebody in this room knows something, and all you have to do is listen, cup a hand to your ear,"
+  },
+  {
+   "start": 13.04,
+   "end": 17.36,
+   "text": "the way you would in a noisy room, and turn toward a conversation."
+  },
+  {
+   "start": 17.36,
+   "end": 28.48,
+   "text": "Try the table on your left first."
+  }
+ ],
+ "audio/left-chatter.mp3": [
+  {
+   "start": 0.0,
+   "end": 3.92,
+   "text": "Can you believe Margaret's leaving? Thirty years in that office."
+  },
+  {
+   "start": 4.56,
+   "end": 7.68,
+   "text": "I know. Who's going to fix the printer now?"
+  },
+  {
+   "start": 8.56,
+   "end": 10.0,
+   "text": "Not me, that's for sure."
+  },
+  {
+   "start": 10.64,
+   "end": 13.76,
+   "text": "The cake looks good, though. Did you try it?"
+  },
+  {
+   "start": 14.56,
+   "end": 17.2,
+   "text": "Not yet. I'm waiting for the speeches."
+  },
+  {
+   "start": 18.0,
+   "end": 21.44,
+   "text": "Same. Is it getting loud in here, or is it just me?"
+  }
+ ],
+ "audio/left-clue.mp3": [
+  {
+   "start": 0.0,
+   "end": 4.4,
+   "text": "Funny thing earlier I saw Victor carrying a big wrapped box toward the kitchen"
+  }
+ ],
+ "audio/reveal1.mp3": [
+  {
+   "start": 0.0,
+   "end": 5.76,
+   "text": "Well done. Victor hid Margaret's gift in the kitchen pantry, and he has the key."
+  },
+  {
+   "start": 5.76,
+   "end": 9.84,
+   "text": "It was a surprise all along. She's going to love it."
+  }
+ ],
+ "audio/right-chatter.mp3": [
+  {
+   "start": 0.0,
+   "end": 2.8,
+   "text": "Chef, Table Four wants more bread."
+  },
+  {
+   "start": 2.8,
+   "end": 5.1,
+   "text": "Table Four always wants more bread."
+  },
+  {
+   "start": 5.1,
+   "end": 7.7,
+   "text": "And someone dropped a glass near the door."
+  },
+  {
+   "start": 7.7,
+   "end": 10.9,
+   "text": "Of course they did. Tonight is a long night."
+  },
+  {
+   "start": 10.9,
+   "end": 12.7,
+   "text": "At least the soup was a hit."
+  },
+  {
+   "start": 12.7,
+   "end": 14.5,
+   "text": "The soup is always a hit."
+  }
+ ],
+ "audio/right-clue.mp3": [
+  {
+   "start": 0.0,
+   "end": 5.28,
+   "text": "And nobody goes into the walk-in pantry. It stays locked until after the speeches."
+  }
+ ]
+}
