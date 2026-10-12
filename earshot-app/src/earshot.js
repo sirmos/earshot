@@ -721,7 +721,7 @@ export class EarshotSystem extends createSystem({}) {
     this.playFanfare();
     this.playApplause(3.4);
     if (cs.theme === 'gala') this.playBangs();
-    this.showCards('CASE SOLVED', cs.finale.text, [], true);
+    this.showCards('CASE SOLVED', cs.finale.text, [], 'always');
     // The host gives the solution just after the fanfare, then you get a few seconds to enjoy the finale.
     this.revealTimer = setTimeout(() => {
       if (this.cs !== cs || this.phase !== 'solved') return;
@@ -833,7 +833,7 @@ export class EarshotSystem extends createSystem({}) {
     place();
     this.addToScene(titleCard.mesh);
     items.forEach((it) => this.addToScene(it.mesh));
-    this.cards = { title: titleCard, items, t0: performance.now(), place, follow: !!follow };
+    this.cards = { title: titleCard, items, t0: performance.now(), place, follow: follow || false };
   }
 
   clearCards() {
@@ -853,7 +853,7 @@ export class EarshotSystem extends createSystem({}) {
     const C = this.cards;
     if (!C) return;
     const age = performance.now() - C.t0;
-    if (C.follow && age < 6000) C.place(); // follow the headset while the session settles
+    if (C.follow && (C.follow === 'always' || age < 6000)) C.place(); // follow the headset while the session settles ('always' = the solved card)
     if (age < 900) return;                 // short grace so nothing is picked by accident
 
     const rays = [];
