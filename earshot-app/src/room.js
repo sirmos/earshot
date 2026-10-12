@@ -1241,6 +1241,7 @@ export class RoomSystem extends createSystem({}) {
 
   // Gold Chiavari-style chairs pulled up to each guest table (on the sides, so the pairs stay visible in front).
   addChairs(tables, hasPiano) {
+    // chairs v2: solid backs, thick legs and a seat skirt, so they read as chairs from every angle.
     const frame = mat(this.theme.chair);
     const cush = mat(this.theme.cushion);
     for (const [tx, tz] of tables) {
@@ -1250,34 +1251,26 @@ export class RoomSystem extends createSystem({}) {
       for (const side of [-1, 1]) {
         const cx = tx + sx * side * 0.88 + ox * 0.12;
         const cz = tz + sz * side * 0.88 + oz * 0.12;
-        if (Math.abs(cx) > 3.15 || Math.abs(cz) > 3.15) continue;           // outside the room
-        if (hasPiano && cx < -1.75 && cz < -2.2) continue;                  // would sit inside the piano
+        if (Math.abs(cx) > 3.15 || Math.abs(cz) > 3.15) continue;
+        if (hasPiano && cx < -1.75 && cz < -2.2) continue;
         const c = new Group();
         c.position.set(cx, 0, cz);
-        c.rotation.y = Math.atan2(tx - cx, tz - cz); // front of the chair faces its table
-        const seat = new Mesh(new BoxGeometry(0.4, 0.03, 0.4), frame);
-        seat.position.y = 0.43;
-        const pad = new Mesh(new BoxGeometry(0.35, 0.05, 0.35), cush);
-        pad.position.y = 0.47;
-        c.add(seat, pad);
-        for (const [lx, lz] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]]) {
-          const leg = new Mesh(new CylinderGeometry(0.014, 0.011, 0.42, 8), frame);
-          leg.position.set(lx, 0.21, lz);
-          c.add(leg);
+        c.rotation.y = Math.atan2(tx - cx, tz - cz); // front faces its table
+        const add = (w, h, d, x, y, z, m) => {
+          const b = new Mesh(new BoxGeometry(w, h, d), m);
+          b.position.set(x, y, z);
+          c.add(b);
+        };
+        add(0.44, 0.06, 0.44, 0, 0.40, 0, frame);        // seat skirt: closes the gap under the cushion
+        add(0.40, 0.07, 0.40, 0, 0.465, 0.01, cush);     // padded seat
+        add(0.44, 0.50, 0.05, 0, 0.70, -0.195, frame);   // solid back panel
+        add(0.34, 0.38, 0.03, 0, 0.70, -0.165, cush);    // padded back, in front of the panel
+        add(0.46, 0.05, 0.07, 0, 0.965, -0.195, frame);  // top rail
+        for (const lx of [-0.18, 0.18]) {
+          for (const lz of [-0.18, 0.18]) add(0.045, 0.40, 0.045, lx, 0.20, lz, frame); // legs
         }
-        for (const lx of [-0.17, 0.17]) {
-          const post = new Mesh(new CylinderGeometry(0.012, 0.012, 0.5, 8), frame);
-          post.position.set(lx, 0.67, -0.17);
-          c.add(post);
-        }
-        const topRail = new Mesh(new BoxGeometry(0.38, 0.035, 0.03), frame);
-        topRail.position.set(0, 0.93, -0.17);
-        c.add(topRail);
-        for (const y of [0.62, 0.78]) {
-          const rung = new Mesh(new BoxGeometry(0.34, 0.016, 0.016), frame);
-          rung.position.set(0, y, -0.17);
-          c.add(rung);
-        }
+        add(0.40, 0.025, 0.025, 0, 0.12, 0.18, frame);   // front stretcher
+        add(0.40, 0.025, 0.025, 0, 0.12, -0.18, frame);  // back stretcher
         this.furn.add(c);
       }
     }
